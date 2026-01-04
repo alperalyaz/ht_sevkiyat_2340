@@ -49,9 +49,15 @@ const UI = {
             });
         }
         
-        // Set today's date as default
+        // Set today's date as default (Türkiye saati - UTC+3)
         if (tarih) {
-            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            // Türkiye saatine çevir (UTC+3)
+            const turkiyeSaati = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
+            const yil = turkiyeSaati.getUTCFullYear();
+            const ay = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0');
+            const gun = turkiyeSaati.getUTCDate().toString().padStart(2, '0');
+            const today = `${yil}-${ay}-${gun}`;
             tarih.value = today;
         }
     },
@@ -73,9 +79,15 @@ const UI = {
         if (recordForm) recordForm.reset();
         if (recordId) recordId.value = '';
         
-        // Set today's date
+        // Set today's date (Türkiye saati - UTC+3)
         if (tarih) {
-            const today = new Date().toISOString().split('T')[0];
+            const now = new Date();
+            // Türkiye saatine çevir (UTC+3)
+            const turkiyeSaati = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
+            const yil = turkiyeSaati.getUTCFullYear();
+            const ay = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0');
+            const gun = turkiyeSaati.getUTCDate().toString().padStart(2, '0');
+            const today = `${yil}-${ay}-${gun}`;
             tarih.value = today;
         }
         
@@ -128,7 +140,13 @@ const UI = {
     // Render today's shipments
     renderTodayShipments(records) {
         const container = document.getElementById('todayShipments');
-        const today = new Date().toISOString().split('T')[0];
+        // Türkiye saati (UTC+3) ile bugünün tarihini al
+        const now = new Date();
+        const turkiyeSaati = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
+        const yil = turkiyeSaati.getUTCFullYear();
+        const ay = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0');
+        const gun = turkiyeSaati.getUTCDate().toString().padStart(2, '0');
+        const today = `${yil}-${ay}-${gun}`;
         
         const todayRecords = records.filter(r => r.Tarih === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal');
         

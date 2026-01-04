@@ -176,7 +176,21 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/config.js"></script>
+    <script>
+        // Google Sheets API Configuration
+        const CONFIG = {
+            SHEET_ID: '1hU_I2xrJt28tsum7TkmzOMZJq5LaI67v17dU65S5wjY',
+            SERVICE_ACCOUNT_EMAIL: 'YOUR_SERVICE_ACCOUNT_EMAIL@project-id.iam.gserviceaccount.com',
+            API_KEY: 'AIzaSyBT8BMiBKiJMqmi7rjAdiGlHT70bAwf9M4',
+            WEB_APP_URL: 'https://script.google.com/macros/s/AKfycby65Ns4lRdmaZpYxtWQSJUCXcDgurPO3WqkgaUhQXE7Nje5fFoLPQ-jDcohiSFWv7lepg/exec',
+            SHEETS: {
+                SEVKIYATLAR: 'Sevkiyatlar',
+                PERSONEL: 'Personel'
+            },
+            APP_URL: 'https://alperalyaz.github.io/ht_sevkiyat_2340',
+            RECORDS_PER_PAGE: 20
+        };
+    </script>
     <script src="js/auth.js"></script>
     <script src="js/sheets.js"></script>
     <script src="js/ui.js"></script>

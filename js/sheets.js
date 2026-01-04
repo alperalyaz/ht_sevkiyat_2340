@@ -215,8 +215,9 @@ const SheetsAPI = {
             
             // Add current user to record data
             recordData.kaydiGiren = Auth.getCurrentUser();
+            const userEmail = Auth.getCurrentUserEmail();
             
-            return await this.webAppRequest('addRecord', { recordData });
+            return await this.webAppRequest('addRecord', { recordData, email: userEmail });
         } catch (error) {
             console.error('Kayıt eklenirken hata:', error);
             throw error;
@@ -231,9 +232,11 @@ const SheetsAPI = {
                 throw new Error('Yazma işlemleri için Web App URL gerekli. Lütfen Google Apps Script\'te web app deploy edin.');
             }
             
+            const userEmail = Auth.getCurrentUserEmail();
             return await this.webAppRequest('updateRecord', { 
                 rowIndex: rowIndex,
-                recordData: recordData
+                recordData: recordData,
+                email: userEmail
             });
         } catch (error) {
             console.error('Kayıt güncellenirken hata:', error);
@@ -249,7 +252,8 @@ const SheetsAPI = {
                 throw new Error('Yazma işlemleri için Web App URL gerekli. Lütfen Google Apps Script\'te web app deploy edin.');
             }
             
-            return await this.webAppRequest('deleteRecord', { rowIndex: rowIndex });
+            const userEmail = Auth.getCurrentUserEmail();
+            return await this.webAppRequest('deleteRecord', { rowIndex: rowIndex, email: userEmail });
         } catch (error) {
             console.error('Kayıt silinirken hata:', error);
             throw error;
@@ -264,9 +268,11 @@ const SheetsAPI = {
                 throw new Error('Yazma işlemleri için Web App URL gerekli. Lütfen Google Apps Script\'te web app deploy edin.');
             }
             
+            const userEmail = Auth.getCurrentUserEmail();
             return await this.webAppRequest('updateStatus', { 
                 rowIndex: rowIndex,
-                newStatus: newStatus
+                newStatus: newStatus,
+                email: userEmail
             });
         } catch (error) {
             console.error('Durum güncellenirken hata:', error);

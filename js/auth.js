@@ -2,6 +2,7 @@
 
 const Auth = {
     currentUser: null,
+    currentUserEmail: null,
     
     // Initialize authentication
     init() {
@@ -114,8 +115,16 @@ const Auth = {
         }
         
         // Enter key support for login
+        const userEmailInput = document.getElementById('userEmail');
         if (userSelect) {
             userSelect.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.login();
+                }
+            });
+        }
+        if (userEmailInput) {
+            userEmailInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     this.login();
                 }
@@ -124,31 +133,57 @@ const Auth = {
     },
     
     // Login
-    login() {
+    async login() {
         const selectedUser = document.getElementById('userSelect').value;
+        const userEmail = document.getElementById('userEmail').value;
         
         if (!selectedUser) {
             alert('Lütfen bir kullanıcı seçiniz!');
             return;
         }
         
-        this.currentUser = selectedUser;
-        localStorage.setItem('currentUser', selectedUser);
-        this.showDashboard();
+        if (!userEmail) {
+            alert('Lütfen mail adresinizi giriniz!');
+            return;
+        }
+        
+        // Mail adresini doğrula (Personel tablosundan kontrol et)
+        // Google Sheets gizli olduğu için sadece mail kontrolü yeterli
+        try {
+            const userInfo = await SheetsAPI.webAppRequest('verifyEmail', { email: userEmail });
+            if (!userInfo.isValid) {
+                alert(userInfo.error || 'Bu mail adresi ile erişim yetkiniz yok. Lütfen Personel tablosundaki mail adresinizi giriniz.');
+                return;
+            }
+            
+            // Mail adresi geçerli, giriş yap
+            this.currentUser = selectedUser;
+            this.currentUserEmail = userEmail;
+            localStorage.setItem('currentUser', selectedUser);
+            localStorage.setItem('currentUserEmail', userEmail);
+            this.showDashboard();
+        } catch (error) {
+            console.error('Giriş hatası:', error);
+            alert('Giriş yapılamadı. Lütfen tekrar deneyiniz.');
+        }
     },
     
     // Logout
     logout() {
         this.currentUser = null;
+        this.currentUserEmail = null;
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('currentUserEmail');
         this.showLogin();
     },
     
     // Load user from localStorage
     loadUser() {
         const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
+        const savedEmail = localStorage.getItem('currentUserEmail');
+        if (savedUser && savedEmail) {
             this.currentUser = savedUser;
+            this.currentUserEmail = savedEmail;
             this.showDashboard();
         } else {
             this.showLogin();
@@ -159,13 +194,20 @@ const Auth = {
     showLogin() {
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('dashboard').classList.add('hidden');
+        // Mail alanını temizle
+        const userEmailInput = document.getElementById('userEmail');
+        if (userEmailInput) {
+            userEmailInput.value = '';
+        }
     },
     
     // Show dashboard
     showDashboard() {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
-        document.getElementById('currentUser').textContent = this.currentUser;
+        // Kullanıcı adı ve mail adresini göster
+        const userDisplay = this.currentUser + (this.currentUserEmail ? ` (${this.currentUserEmail})` : '');
+        document.getElementById('currentUser').textContent = userDisplay;
         
         // Load data when dashboard is shown
         if (typeof App !== 'undefined') {
@@ -176,6 +218,11 @@ const Auth = {
     // Get current user
     getCurrentUser() {
         return this.currentUser;
+    },
+    
+    // Get current user email
+    getCurrentUserEmail() {
+        return this.currentUserEmail || localStorage.getItem('currentUserEmail');
     },
     
     // Check if user is logged in

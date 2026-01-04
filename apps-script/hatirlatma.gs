@@ -14,12 +14,12 @@
  */
 
 // Sheet ID ve isimleri
-const SHEET_ID = 'YOUR_SHEET_ID_HERE'; // Sheet ID'yi buraya yazın
+const SHEET_ID = '1hU_I2xrJt28tsum7TkmzOMZJq5LaI67v17dU65S5wjY';
 const SEVKIYATLAR_SHEET = 'Sevkiyatlar';
 const PERSONEL_SHEET = 'Personel';
 
 // App URL (mail içinde kullanılacak)
-const APP_URL = 'https://your-domain.com'; // Uygulama URL'ini buraya yazın
+const APP_URL = 'https://alperalyaz.github.io/ht_sevkiyat_2340';
 
 /**
  * Ana fonksiyon: Günlük hatırlatma maillerini gönder

@@ -20,8 +20,93 @@ const SHEET_ID = '1hU_I2xrJt28tsum7TkmzOMZJq5LaI67v17dU65S5wjY';
 const SEVKIYATLAR_SHEET = 'Sevkiyatlar';
 const PERSONEL_SHEET = 'Personel';
 
+// İzin verilen email listesi Personel tablosundan otomatik alınacak
+
 // Note: Google Apps Script ContentService doesn't support setHeaders()
 // CORS is handled by deployment settings: "Who has access: Anyone"
+
+/**
+ * Personel tablosundan izin verilen email listesini al
+ * Basit sistem: Sadece mail kontrolü (Google Sheets gizli olduğu için yeterli)
+ */
+function getAllowedEmails() {
+  try {
+    const spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+    const sheet = spreadsheet.getSheetByName(PERSONEL_SHEET);
+    
+    if (!sheet) {
+      Logger.log('Personel sheet\'i bulunamadı');
+      return [];
+    }
+    
+    const data = sheet.getDataRange().getValues();
+    if (data.length < 2) {
+      return [];
+    }
+    
+    const headers = data[0];
+    const mailIndex = headers.findIndex(h => h.toLowerCase().includes('mail') || h.toLowerCase().includes('e-posta') || h.toLowerCase().includes('email'));
+    const aktifIndex = headers.findIndex(h => h.toLowerCase().includes('aktif'));
+    
+    if (mailIndex === -1) {
+      Logger.log('Mail sütunu bulunamadı');
+      return [];
+    }
+    
+    const allowedEmails = [];
+    for (let i = 1; i < data.length; i++) {
+      const row = data[i];
+      const mail = row[mailIndex];
+      const aktif = aktifIndex !== -1 ? row[aktifIndex] : true;
+      
+      // Aktif personelin mail adresini ekle
+      if (mail && mail.toString().trim() !== '' && (aktif === true || aktif === 'TRUE' || aktif === 'true' || aktifIndex === -1)) {
+        allowedEmails.push(mail.toString().trim().toLowerCase());
+      }
+    }
+    
+    return allowedEmails;
+  } catch (error) {
+    Logger.log('getAllowedEmails hatası: ' + error.toString());
+    return [];
+  }
+}
+
+/**
+ * Kullanıcı doğrulama fonksiyonu
+ * Personel tablosundaki mail adresini kontrol eder
+ * Google Sheets gizli olduğu için sadece mail kontrolü yeterli
+ */
+function checkUserAuth(email) {
+  try {
+    if (!email) {
+      return { authorized: false, error: 'Mail adresi gerekli' };
+    }
+    
+    // Email'i küçük harfe çevir
+    const emailLower = email.toLowerCase().trim();
+    
+    // Personel tablosundan izin verilen email listesini al
+    const allowedEmails = getAllowedEmails();
+    
+    if (allowedEmails.length === 0) {
+      Logger.log('İzin verilen email listesi boş');
+      return { authorized: false, error: 'Personel listesi bulunamadı' };
+    }
+    
+    // Email'in listede olup olmadığını kontrol et
+    const isAllowed = allowedEmails.includes(emailLower);
+    
+    if (!isAllowed) {
+      return { authorized: false, error: 'Bu mail adresi ile erişim yetkiniz yok. Lütfen yönetici ile iletişime geçin.' };
+    }
+    
+    return { authorized: true, email: emailLower };
+  } catch (error) {
+    Logger.log('Auth hatası: ' + error.toString());
+    return { authorized: false, error: 'Kimlik doğrulama hatası: ' + error.toString() };
+  }
+}
 
 /**
  * Main doGet/doPost handler
@@ -59,6 +144,34 @@ function doPost(e) {
     
     if (!action) {
       throw new Error('Action parametresi gerekli');
+    }
+    
+    // Kullanıcı doğrulaması (sadece yazma işlemleri için)
+    const writeActions = ['addRecord', 'updateRecord', 'deleteRecord', 'updateStatus'];
+    if (writeActions.includes(action)) {
+      // Mail adresini request'ten al
+      const userEmail = requestData.email || requestData.userEmail || e.parameter.email;
+      
+      if (!userEmail) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ 
+            success: false, 
+            error: 'Mail adresi gerekli. Lütfen mail adresinizi giriniz.',
+            requiresAuth: true
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const authCheck = checkUserAuth(userEmail);
+      if (!authCheck.authorized) {
+        return ContentService
+          .createTextOutput(JSON.stringify({ 
+            success: false, 
+            error: authCheck.error || 'Yetkilendirme gerekli',
+            requiresAuth: true
+          }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
     }
     
     let result;
@@ -101,6 +214,22 @@ function doGet(e) {
   try {
     // GET istekleri için (opsiyonel)
     const action = e.parameter.action;
+    
+    // Mail adresi doğrulama (şifre gerekmez, Google Sheets gizli olduğu için)
+    if (action === 'verifyEmail') {
+      const email = e.parameter.email;
+      const authCheck = checkUserAuth(email);
+      return ContentService
+        .createTextOutput(JSON.stringify({ 
+          success: true, 
+          data: {
+            isValid: authCheck.authorized,
+            email: authCheck.email || null,
+            error: authCheck.error || null
+          }
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
     
     if (action === 'getSevkiyatlar') {
       const result = getSevkiyatlar();

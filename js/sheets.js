@@ -18,15 +18,14 @@ const SheetsAPI = {
         }
         
         try {
+            // Use URLSearchParams to avoid CORS preflight (simple form data)
+            const params = new URLSearchParams();
+            params.append('action', action);
+            params.append('data', JSON.stringify(data));
+            
             const response = await fetch(CONFIG.WEB_APP_URL, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    action: action,
-                    ...data
-                })
+                body: params
             });
             
             // Response'u text olarak al (bazen JSON parse hatası olabilir)

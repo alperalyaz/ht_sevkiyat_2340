@@ -21,18 +21,56 @@ const SEVKIYATLAR_SHEET = 'Sevkiyatlar';
 const PERSONEL_SHEET = 'Personel';
 
 /**
+ * CORS headers helper
+ */
+function getCorsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+  };
+}
+
+/**
+ * Handle OPTIONS request for CORS preflight
+ */
+function doOptions() {
+  return ContentService
+    .createTextOutput('')
+    .setMimeType(ContentService.MimeType.TEXT)
+    .setHeaders(getCorsHeaders());
+}
+
+/**
  * Main doGet/doPost handler
  */
 function doPost(e) {
   try {
-    // Parse request data
+    // Parse request data - support both JSON and form data
     let requestData = {};
     if (e.postData && e.postData.contents) {
-      requestData = JSON.parse(e.postData.contents);
+      try {
+        requestData = JSON.parse(e.postData.contents);
+      } catch (e) {
+        // If not JSON, try form data
+        requestData = e.parameter || {};
+      }
     } else if (e.parameter && e.parameter.data) {
-      requestData = JSON.parse(e.parameter.data);
+      try {
+        requestData = JSON.parse(e.parameter.data);
+      } catch (e) {
+        requestData = e.parameter;
+      }
     } else if (e.parameter) {
       requestData = e.parameter;
+      // If data is a string, try to parse it
+      if (requestData.data && typeof requestData.data === 'string') {
+        try {
+          requestData = { ...requestData, ...JSON.parse(requestData.data) };
+        } catch (e) {
+          // Keep as is
+        }
+      }
     }
     
     const action = requestData.action || e.parameter.action;
@@ -68,12 +106,14 @@ function doPost(e) {
     
     return ContentService
       .createTextOutput(JSON.stringify({ success: true, data: result }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(getCorsHeaders());
       
   } catch (error) {
     return ContentService
       .createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(getCorsHeaders());
   }
 }
 
@@ -86,14 +126,16 @@ function doGet(e) {
       const result = getSevkiyatlar();
       return ContentService
         .createTextOutput(JSON.stringify({ success: true, data: result }))
-        .setMimeType(ContentService.MimeType.JSON);
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeaders(getCorsHeaders());
     }
     
     if (action === 'getPersonel') {
       const result = getPersonel();
       return ContentService
         .createTextOutput(JSON.stringify({ success: true, data: result }))
-        .setMimeType(ContentService.MimeType.JSON);
+        .setMimeType(ContentService.MimeType.JSON)
+        .setHeaders(getCorsHeaders());
     }
     
     // Test için: action yoksa bilgi mesajı döndür
@@ -103,12 +145,14 @@ function doGet(e) {
         message: 'Web App çalışıyor! POST isteği ile action parametresi gönderin.',
         availableActions: ['getSevkiyatlar', 'getPersonel', 'addRecord', 'updateRecord', 'deleteRecord', 'updateStatus']
       }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(getCorsHeaders());
       
   } catch (error) {
     return ContentService
       .createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(getCorsHeaders());
   }
 }
 

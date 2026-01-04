@@ -11,50 +11,32 @@ const Auth = {
         this.loadPersonel();
     },
     
-    // Load personel list for dropdown
+    // Load personel list (sadece dağıtımcı dropdown için, güvenlik için kullanıcı isimleri gösterilmiyor)
     async loadPersonel() {
         try {
             // Check if CONFIG is set
             if (!CONFIG || CONFIG.SHEET_ID === 'YOUR_SHEET_ID_HERE' || CONFIG.API_KEY === 'YOUR_API_KEY_HERE') {
                 // Silently use hardcoded personel list as fallback
-                // CONFIG ayarlanmamışsa hardcoded liste kullanılacak
                 this.loadHardcodedPersonel();
                 return;
             }
             
             const personel = await SheetsAPI.getPersonel();
-            const userSelect = document.getElementById('userSelect');
             const dagitimciSelect = document.getElementById('dagitimci');
             
-            if (!userSelect) {
-                console.error('userSelect elementi bulunamadı');
-                return;
-            }
-            
-            // Clear existing options (except first option)
-            userSelect.innerHTML = '<option value="">-- Kullanıcı Seçiniz --</option>';
-            
+            // Sadece dağıtımcı dropdown'u doldur (kullanıcı seçimi yok artık)
             if (dagitimciSelect) {
                 dagitimciSelect.innerHTML = '<option value="">-- Dağıtımcı Seçiniz --</option>';
-            }
-            
-            personel.forEach(person => {
-                if (person.Aktif === 'TRUE' || person.Aktif === true || person.Aktif === 'true') {
-                    // User select
-                    const option1 = document.createElement('option');
-                    option1.value = person.İsim;
-                    option1.textContent = person.İsim;
-                    userSelect.appendChild(option1);
-                    
-                    // Dağıtımcı select (if exists)
-                    if (dagitimciSelect) {
-                        const option2 = document.createElement('option');
-                        option2.value = person.İsim;
-                        option2.textContent = person.İsim;
-                        dagitimciSelect.appendChild(option2);
+                
+                personel.forEach(person => {
+                    if (person.Aktif === 'TRUE' || person.Aktif === true || person.Aktif === 'true') {
+                        const option = document.createElement('option');
+                        option.value = person.İsim;
+                        option.textContent = person.İsim;
+                        dagitimciSelect.appendChild(option);
                     }
-                }
-            });
+                });
+            }
         } catch (error) {
             console.error('Personel yüklenirken hata:', error);
             // Fallback to hardcoded list
@@ -62,7 +44,7 @@ const Auth = {
         }
     },
     
-    // Load hardcoded personel list as fallback
+    // Load hardcoded personel list as fallback (sadece dağıtımcı için)
     loadHardcodedPersonel() {
         const hardcodedPersonel = [
             { İsim: 'NUR YILDIZ DURAN', Aktif: true },
@@ -76,26 +58,15 @@ const Auth = {
             { İsim: 'SIDIKA KARAKAYA', Aktif: true }
         ];
         
-        const userSelect = document.getElementById('userSelect');
         const dagitimciSelect = document.getElementById('dagitimci');
-        
-        if (userSelect) {
-            userSelect.innerHTML = '<option value="">-- Kullanıcı Seçiniz --</option>';
-            hardcodedPersonel.forEach(person => {
-                const option1 = document.createElement('option');
-                option1.value = person.İsim;
-                option1.textContent = person.İsim;
-                userSelect.appendChild(option1);
-            });
-        }
         
         if (dagitimciSelect) {
             dagitimciSelect.innerHTML = '<option value="">-- Dağıtımcı Seçiniz --</option>';
             hardcodedPersonel.forEach(person => {
-                const option2 = document.createElement('option');
-                option2.value = person.İsim;
-                option2.textContent = person.İsim;
-                dagitimciSelect.appendChild(option2);
+                const option = document.createElement('option');
+                option.value = person.İsim;
+                option.textContent = person.İsim;
+                dagitimciSelect.appendChild(option);
             });
         }
     },

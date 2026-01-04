@@ -116,13 +116,6 @@ const Auth = {
         
         // Enter key support for login
         const userEmailInput = document.getElementById('userEmail');
-        if (userSelect) {
-            userSelect.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    this.login();
-                }
-            });
-        }
         if (userEmailInput) {
             userEmailInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -134,13 +127,7 @@ const Auth = {
     
     // Login
     async login() {
-        const selectedUser = document.getElementById('userSelect').value;
         const userEmail = document.getElementById('userEmail').value;
-        
-        if (!selectedUser) {
-            alert('Lütfen bir kullanıcı seçiniz!');
-            return;
-        }
         
         if (!userEmail) {
             alert('Lütfen mail adresinizi giriniz!');
@@ -152,14 +139,18 @@ const Auth = {
         try {
             const userInfo = await SheetsAPI.webAppRequest('verifyEmail', { email: userEmail });
             if (!userInfo.isValid) {
-                alert(userInfo.error || 'Bu mail adresi ile erişim yetkiniz yok. Lütfen Personel tablosundaki mail adresinizi giriniz.');
+                alert(userInfo.error || 'Bu mail adresi ile erişim yetkiniz yok.');
                 return;
             }
             
+            // Mail adresinden kullanıcı adını al (mail'in @ öncesi kısmı veya tam mail)
+            // Personel tablosundan isim almak için getPersonel kullanabiliriz ama güvenlik için sadece mail gösterelim
+            const displayName = userEmail.split('@')[0]; // Mail'in @ öncesi kısmı
+            
             // Mail adresi geçerli, giriş yap
-            this.currentUser = selectedUser;
+            this.currentUser = displayName; // Mail'in @ öncesi kısmını kullanıcı adı olarak göster
             this.currentUserEmail = userEmail;
-            localStorage.setItem('currentUser', selectedUser);
+            localStorage.setItem('currentUser', displayName);
             localStorage.setItem('currentUserEmail', userEmail);
             this.showDashboard();
         } catch (error) {

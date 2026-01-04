@@ -49,15 +49,12 @@ const UI = {
             });
         }
         
-        // Set today's date as default (Türkiye saati - UTC+3)
+        // Set today's date as default (Yerel saat)
         if (tarih) {
             const now = new Date();
-            // Türkiye saatine çevir: UTC'ye çevir, sonra UTC+3 ekle
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-            const turkiyeTime = new Date(utcTime + (3 * 60 * 60 * 1000));
-            const yil = turkiyeTime.getUTCFullYear();
-            const ay = (turkiyeTime.getUTCMonth() + 1).toString().padStart(2, '0');
-            const gun = turkiyeTime.getUTCDate().toString().padStart(2, '0');
+            const yil = now.getFullYear();
+            const ay = (now.getMonth() + 1).toString().padStart(2, '0');
+            const gun = now.getDate().toString().padStart(2, '0');
             const today = `${yil}-${ay}-${gun}`;
             tarih.value = today;
         }
@@ -80,15 +77,12 @@ const UI = {
         if (recordForm) recordForm.reset();
         if (recordId) recordId.value = '';
         
-        // Set today's date (Türkiye saati - UTC+3)
+        // Set today's date (Yerel saat)
         if (tarih) {
             const now = new Date();
-            // Türkiye saatine çevir: UTC'ye çevir, sonra UTC+3 ekle
-            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-            const turkiyeTime = new Date(utcTime + (3 * 60 * 60 * 1000));
-            const yil = turkiyeTime.getUTCFullYear();
-            const ay = (turkiyeTime.getUTCMonth() + 1).toString().padStart(2, '0');
-            const gun = turkiyeTime.getUTCDate().toString().padStart(2, '0');
+            const yil = now.getFullYear();
+            const ay = (now.getMonth() + 1).toString().padStart(2, '0');
+            const gun = now.getDate().toString().padStart(2, '0');
             const today = `${yil}-${ay}-${gun}`;
             tarih.value = today;
         }
@@ -142,14 +136,11 @@ const UI = {
     // Render today's shipments
     renderTodayShipments(records) {
         const container = document.getElementById('todayShipments');
-        // Türkiye saati (UTC+3) ile bugünün tarihini al
+        // Bugünün tarihini al (Yerel saat)
         const now = new Date();
-        // Türkiye saatine çevir: UTC'ye çevir, sonra UTC+3 ekle
-        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-        const turkiyeTime = new Date(utcTime + (3 * 60 * 60 * 1000));
-        const yil = turkiyeTime.getUTCFullYear();
-        const ay = (turkiyeTime.getUTCMonth() + 1).toString().padStart(2, '0');
-        const gun = turkiyeTime.getUTCDate().toString().padStart(2, '0');
+        const yil = now.getFullYear();
+        const ay = (now.getMonth() + 1).toString().padStart(2, '0');
+        const gun = now.getDate().toString().padStart(2, '0');
         const today = `${yil}-${ay}-${gun}`;
         
         const todayRecords = records.filter(r => r.Tarih === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal');
@@ -171,6 +162,30 @@ const UI = {
                 </div>
             </div>
         `).join('');
+    },
+    
+    // Tarih formatını sadece tarih olarak göster (saat olmadan)
+    formatSadeceTarih(tarihStr) {
+        if (!tarihStr) return '';
+        try {
+            // ISO formatında gelirse (2026-01-03T21:00:00.000Z gibi)
+            if (tarihStr.includes('T')) {
+                return tarihStr.split('T')[0];
+            }
+            // Zaten YYYY-MM-DD formatındaysa
+            if (tarihStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return tarihStr;
+            }
+            // Date objesi oluşturup sadece tarihi al
+            const tarih = new Date(tarihStr);
+            if (isNaN(tarih.getTime())) return tarihStr;
+            const yil = tarih.getFullYear();
+            const ay = (tarih.getMonth() + 1).toString().padStart(2, '0');
+            const gun = tarih.getDate().toString().padStart(2, '0');
+            return `${yil}-${ay}-${gun}`;
+        } catch (e) {
+            return tarihStr;
+        }
     },
     
     // Render overdue shipments
@@ -199,7 +214,7 @@ const UI = {
                     <div>
                         <p class="font-semibold text-gray-800">${record.Kaynak || ''} → ${record.Hedef || ''}</p>
                         <p class="text-sm text-gray-600">${record['Hedef Bölge'] || ''}</p>
-                        <p class="text-xs text-red-600 mt-1">Tarih: ${record.Tarih || ''}</p>
+                        <p class="text-xs text-red-600 mt-1">Tarih: ${this.formatSadeceTarih(record.Tarih)}</p>
                         <p class="text-xs text-gray-500 mt-1">Dağıtımcı: ${record.Dağıtımcı || 'Atanmamış'}</p>
                     </div>
                     <span class="status-badge status-${record.Durum?.toLowerCase() || 'bekliyor'}">${record.Durum || 'Bekliyor'}</span>
@@ -260,7 +275,7 @@ const UI = {
             return `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.ID || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${this.formatTarihTürkçe(record.Tarih)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.Tarih || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Kaynak || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Hedef || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record['Hedef Bölge'] || ''}</td>

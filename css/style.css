@@ -1,0 +1,95 @@
+/* Custom Styles for Hidroteknik Sevkiyat Takip Sistemi */
+
+/* Status Badge Styles */
+.status-badge {
+    @apply px-3 py-1 rounded-full text-xs font-semibold;
+}
+
+.status-bekliyor {
+    @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-yolda {
+    @apply bg-blue-100 text-blue-800;
+}
+
+.status-tamamlandi {
+    @apply bg-green-100 text-green-800;
+}
+
+.status-iptal {
+    @apply bg-red-100 text-red-800;
+}
+
+/* Record Card Styles */
+.record-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition duration-200;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modal Animation */
+#recordModal {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Table Row Hover */
+tbody tr:hover {
+    @apply bg-gray-50;
+}
+
+/* Pagination Styles */
+.pagination-btn {
+    @apply px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-200;
+}
+
+.pagination-btn.active {
+    @apply bg-blue-600 text-white border-blue-600;
+}
+
+.pagination-btn:disabled {
+    @apply opacity-50 cursor-not-allowed;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+

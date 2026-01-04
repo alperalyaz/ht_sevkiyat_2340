@@ -52,11 +52,12 @@ const UI = {
         // Set today's date as default (Türkiye saati - UTC+3)
         if (tarih) {
             const now = new Date();
-            // Türkiye saatine çevir (UTC+3)
-            const turkiyeSaati = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
-            const yil = turkiyeSaati.getUTCFullYear();
-            const ay = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0');
-            const gun = turkiyeSaati.getUTCDate().toString().padStart(2, '0');
+            // Türkiye saatine çevir: UTC'ye çevir, sonra UTC+3 ekle
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+            const turkiyeTime = new Date(utcTime + (3 * 60 * 60 * 1000));
+            const yil = turkiyeTime.getUTCFullYear();
+            const ay = (turkiyeTime.getUTCMonth() + 1).toString().padStart(2, '0');
+            const gun = turkiyeTime.getUTCDate().toString().padStart(2, '0');
             const today = `${yil}-${ay}-${gun}`;
             tarih.value = today;
         }
@@ -82,11 +83,12 @@ const UI = {
         // Set today's date (Türkiye saati - UTC+3)
         if (tarih) {
             const now = new Date();
-            // Türkiye saatine çevir (UTC+3)
-            const turkiyeSaati = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
-            const yil = turkiyeSaati.getUTCFullYear();
-            const ay = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0');
-            const gun = turkiyeSaati.getUTCDate().toString().padStart(2, '0');
+            // Türkiye saatine çevir: UTC'ye çevir, sonra UTC+3 ekle
+            const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+            const turkiyeTime = new Date(utcTime + (3 * 60 * 60 * 1000));
+            const yil = turkiyeTime.getUTCFullYear();
+            const ay = (turkiyeTime.getUTCMonth() + 1).toString().padStart(2, '0');
+            const gun = turkiyeTime.getUTCDate().toString().padStart(2, '0');
             const today = `${yil}-${ay}-${gun}`;
             tarih.value = today;
         }
@@ -142,10 +144,12 @@ const UI = {
         const container = document.getElementById('todayShipments');
         // Türkiye saati (UTC+3) ile bugünün tarihini al
         const now = new Date();
-        const turkiyeSaati = new Date(now.getTime() + (now.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
-        const yil = turkiyeSaati.getUTCFullYear();
-        const ay = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0');
-        const gun = turkiyeSaati.getUTCDate().toString().padStart(2, '0');
+        // Türkiye saatine çevir: UTC'ye çevir, sonra UTC+3 ekle
+        const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+        const turkiyeTime = new Date(utcTime + (3 * 60 * 60 * 1000));
+        const yil = turkiyeTime.getUTCFullYear();
+        const ay = (turkiyeTime.getUTCMonth() + 1).toString().padStart(2, '0');
+        const gun = turkiyeTime.getUTCDate().toString().padStart(2, '0');
         const today = `${yil}-${ay}-${gun}`;
         
         const todayRecords = records.filter(r => r.Tarih === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal');

@@ -1,5 +1,5 @@
 # Configuration files with sensitive data
-js/config.js
+# js/config.js - GitHub Pages için yüklüyoruz (API key'ler public)
 
 # Service Account JSON keys
 *.json

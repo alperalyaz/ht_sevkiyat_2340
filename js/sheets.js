@@ -18,14 +18,16 @@ const SheetsAPI = {
         }
         
         try {
-            // Use URLSearchParams to avoid CORS preflight (simple form data)
-            const params = new URLSearchParams();
-            params.append('action', action);
-            params.append('data', JSON.stringify(data));
-            
+            // Use text/plain to avoid CORS preflight (Google Apps Script workaround)
             const response = await fetch(CONFIG.WEB_APP_URL, {
                 method: 'POST',
-                body: params
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify({
+                    action: action,
+                    ...data
+                })
             });
             
             // Response'u text olarak al (bazen JSON parse hatası olabilir)

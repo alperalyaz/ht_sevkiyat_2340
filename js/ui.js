@@ -168,23 +168,26 @@ const UI = {
     formatSadeceTarih(tarihStr) {
         if (!tarihStr) return '';
         try {
+            // String'e çevir
+            const tarihString = String(tarihStr);
+            
             // ISO formatında gelirse (2026-01-03T21:00:00.000Z gibi)
-            if (tarihStr.includes('T')) {
-                return tarihStr.split('T')[0];
+            if (tarihString.includes('T')) {
+                return tarihString.split('T')[0];
             }
             // Zaten YYYY-MM-DD formatındaysa
-            if (tarihStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                return tarihStr;
+            if (tarihString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                return tarihString;
             }
             // Date objesi oluşturup sadece tarihi al
             const tarih = new Date(tarihStr);
-            if (isNaN(tarih.getTime())) return tarihStr;
+            if (isNaN(tarih.getTime())) return tarihString;
             const yil = tarih.getFullYear();
             const ay = (tarih.getMonth() + 1).toString().padStart(2, '0');
             const gun = tarih.getDate().toString().padStart(2, '0');
             return `${yil}-${ay}-${gun}`;
         } catch (e) {
-            return tarihStr;
+            return String(tarihStr || '');
         }
     },
     

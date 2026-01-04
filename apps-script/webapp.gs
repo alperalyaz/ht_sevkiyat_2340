@@ -146,6 +146,22 @@ function doPost(e) {
       throw new Error('Action parametresi gerekli');
     }
     
+    // Mail adresi doğrulama (doPost'ta da destekle)
+    if (action === 'verifyEmail') {
+      const email = requestData.email || e.parameter.email;
+      const authCheck = checkUserAuth(email);
+      return ContentService
+        .createTextOutput(JSON.stringify({ 
+          success: true, 
+          data: {
+            isValid: authCheck.authorized,
+            email: authCheck.email || null,
+            error: authCheck.error || null
+          }
+        }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
     // Kullanıcı doğrulaması (sadece yazma işlemleri için)
     const writeActions = ['addRecord', 'updateRecord', 'deleteRecord', 'updateStatus'];
     if (writeActions.includes(action)) {

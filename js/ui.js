@@ -186,6 +186,29 @@ const UI = {
         `).join('');
     },
     
+    // Tarih formatını Türkçe'ye çevir
+    formatTarihTürkçe(tarihStr) {
+        if (!tarihStr) return '';
+        try {
+            const tarih = new Date(tarihStr);
+            if (isNaN(tarih.getTime())) return tarihStr;
+            
+            // Türkiye saatine çevir (UTC+3)
+            const turkiyeSaati = new Date(tarih.getTime() + (tarih.getTimezoneOffset() * 60 * 1000) + (3 * 60 * 60 * 1000));
+            
+            const ayIsimleri = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+            const gun = turkiyeSaati.getUTCDate();
+            const ay = ayIsimleri[turkiyeSaati.getUTCMonth()];
+            const yil = turkiyeSaati.getUTCFullYear();
+            const saat = turkiyeSaati.getUTCHours().toString().padStart(2, '0');
+            const dakika = turkiyeSaati.getUTCMinutes().toString().padStart(2, '0');
+            
+            return `${gun} ${ay} ${yil} ${saat}:${dakika}`;
+        } catch (e) {
+            return tarihStr;
+        }
+    },
+    
     // Render records table
     renderRecordsTable(records) {
         this.allRecords = records;
@@ -202,7 +225,7 @@ const UI = {
         const tbody = document.getElementById('recordsTableBody');
         
         if (pageRecords.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-gray-500">Kayıt bulunamadı.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Kayıt bulunamadı.</td></tr>';
             this.renderPagination();
             return;
         }
@@ -215,11 +238,12 @@ const UI = {
             return `
                 <tr>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.ID || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.Tarih || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${this.formatTarihTürkçe(record.Tarih)}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Kaynak || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Hedef || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record['Hedef Bölge'] || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Dağıtımcı || 'Atanmamış'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${record['Kaydı Giren'] || ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="status-badge status-${record.Durum?.toLowerCase() || 'bekliyor'}">${record.Durum || 'Bekliyor'}</span>
                     </td>

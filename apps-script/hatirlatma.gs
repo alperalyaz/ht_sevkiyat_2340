@@ -372,9 +372,8 @@ function sendDailyReport() {
     const subject = `Hidroteknik - Günlük Sevkiyat Raporu (${todayStr})`;
     const body = createDailyReportBody(todayStr, bugunEklenenler, bugunTamamlananlar, bugunPlanlanmisTamamlanmamis);
     
-    // Yönetici mail adresi - Buraya yönetici mail adresinizi yazın
-    // TODO: Yönetici mail adresini buraya ekleyin
-    const adminEmail = 'hidroteknikas@gmail.com'; // Buraya yönetici mail adresinizi yazın
+    // Yönetici mail adresi
+    const adminEmail = 'alper.alyaz@hidroteknik.com.tr';
     
     // Mail gönder
     try {
@@ -390,6 +389,31 @@ function sendDailyReport() {
     
   } catch (error) {
     Logger.log('Günlük rapor hatası: ' + error.toString());
+  }
+}
+
+/**
+ * Tarih formatını Türkçe'ye çevir (Google Apps Script)
+ */
+function formatTarihTürkçe(tarihStr) {
+  if (!tarihStr) return '';
+  try {
+    const tarih = new Date(tarihStr);
+    if (isNaN(tarih.getTime())) return tarihStr;
+    
+    // Türkiye saatine çevir (UTC+3)
+    const turkiyeSaati = new Date(tarih.getTime() + (3 * 60 * 60 * 1000));
+    
+    const ayIsimleri = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+    const gun = turkiyeSaati.getUTCDate();
+    const ay = ayIsimleri[turkiyeSaati.getUTCMonth()];
+    const yil = turkiyeSaati.getUTCFullYear();
+    const saat = turkiyeSaati.getUTCHours().toString().padStart(2, '0');
+    const dakika = turkiyeSaati.getUTCMinutes().toString().padStart(2, '0');
+    
+    return `${gun} ${ay} ${yil} ${saat}:${dakika}`;
+  } catch (e) {
+    return tarihStr;
   }
 }
 
@@ -425,7 +449,7 @@ function createDailyReportBody(tarih, eklenenler, tamamlananlar, planlanmisTamam
       body += `   Dağıtımcı: ${sevkiyat['Dağıtımcı'] || 'Atanmamış'}\n`;
       body += `   Durum: ${sevkiyat['Durum'] || 'Bekliyor'}\n`;
       body += `   Kaydı Giren: ${sevkiyat['Kaydı Giren'] || ''}\n`;
-      body += `   Kayıt Zamanı: ${sevkiyat['Kayıt Zamanı'] || ''}\n`;
+      body += `   Kayıt Zamanı: ${formatTarihTürkçe(sevkiyat['Kayıt Zamanı'])}\n`;
       body += `\n`;
     });
   }
@@ -449,7 +473,7 @@ function createDailyReportBody(tarih, eklenenler, tamamlananlar, planlanmisTamam
       if (sevkiyat['Dağıtımcı']) {
         body += `   Dağıtımcı: ${sevkiyat['Dağıtımcı']}\n`;
       }
-      body += `   Tamamlanma Zamanı: ${sevkiyat['Tamamlanma Zamanı'] || ''}\n`;
+      body += `   Tamamlanma Zamanı: ${formatTarihTürkçe(sevkiyat['Tamamlanma Zamanı'])}\n`;
       body += `\n`;
     });
   }

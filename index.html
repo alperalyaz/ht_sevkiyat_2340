@@ -103,13 +103,14 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hedef</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hedef Bölge</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dağıtımcı</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kaydı Giren</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durum</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
                             </tr>
                         </thead>
                         <tbody id="recordsTableBody" class="bg-white divide-y divide-gray-200">
                             <tr>
-                                <td colspan="8" class="px-6 py-4 text-center text-gray-500">Yükleniyor...</td>
+                                <td colspan="9" class="px-6 py-4 text-center text-gray-500">Yükleniyor...</td>
                             </tr>
                         </tbody>
                     </table>
@@ -144,8 +145,17 @@
                         <input type="text" id="hedef" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label for="hedefBolge" class="block text-sm font-medium text-gray-700 mb-1">Hedef Bölge *</label>
-                        <input type="text" id="hedefBolge" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <label for="hedefBolge" class="block text-sm font-medium text-gray-700 mb-1">Hedef Bölge</label>
+                        <select id="hedefBolge" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">-- Seçiniz --</option>
+                            <option value="HACIEYÜPLÜ">HACIEYÜPLÜ</option>
+                            <option value="SANAYİ">SANAYİ</option>
+                            <option value="ŞEHİR MERKEZİ">ŞEHİR MERKEZİ</option>
+                            <option value="DENİZLİ OSB">DENİZLİ OSB</option>
+                            <option value="ÇARDAK OSB VE CİVARI">ÇARDAK OSB VE CİVARI</option>
+                            <option value="ŞEHİR DIŞI">ŞEHİR DIŞI</option>
+                            <option value="DİĞER">DİĞER</option>
+                        </select>
                     </div>
                     <div>
                         <label for="kaynakMuhatap" class="block text-sm font-medium text-gray-700 mb-1">Kaynak Muhatap</label>

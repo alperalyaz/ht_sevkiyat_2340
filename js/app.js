@@ -21,7 +21,7 @@ const App = {
                 if (tbody) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="8" class="px-6 py-4 text-center">
+                            <td colspan="9" class="px-6 py-4 text-center">
                                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                                     <p class="text-yellow-800 font-semibold mb-2">⚠️ Yapılandırma Gerekli</p>
                                     <p class="text-yellow-700 text-sm">
@@ -65,7 +65,7 @@ const App = {
             // Show empty state
             const tbody = document.getElementById('recordsTableBody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="8" class="px-6 py-4 text-center text-red-500">Veri yüklenemedi. Lütfen CONFIG ayarlarını kontrol edin.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">Veri yüklenemedi. Lütfen CONFIG ayarlarını kontrol edin.</td></tr>';
             }
         }
     },

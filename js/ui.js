@@ -275,10 +275,13 @@ const UI = {
             const canDelete = App.canDeleteRecord(record);
             const canComplete = App.canCompleteRecord(record);
             
+            // Açıklama varsa tooltip için title attribute ekle
+            const aciklamaTooltip = record.Açıklama ? `title="${record.Açıklama.replace(/"/g, '&quot;')}"` : '';
+            
             return `
-                <tr>
+                <tr ${aciklamaTooltip} class="hover:bg-gray-50 cursor-pointer">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.ID || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.Tarih || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${this.formatSadeceTarih(record.Tarih)}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Kaynak || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Hedef || ''}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record['Hedef Bölge'] || ''}</td>

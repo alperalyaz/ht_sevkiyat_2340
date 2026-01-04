@@ -377,10 +377,28 @@ function addRecord(recordData) {
   const id = 'SEV-' + year + month + day + hour + minute;
   const nowISO = turkiyeSaati.toISOString();
   
+  // Tarihi doğru şekilde parse et (timezone dönüşümü yapma)
+  let tarihDegeri = '';
+  if (recordData.tarih) {
+    try {
+      // YYYY-MM-DD formatında ise, yerel tarih olarak parse et
+      if (typeof recordData.tarih === 'string' && recordData.tarih.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [yil, ay, gun] = recordData.tarih.split('-').map(Number);
+        // Yerel tarih olarak oluştur (timezone dönüşümü yapmadan)
+        const tarihObj = new Date(yil, ay - 1, gun, 12, 0, 0); // Öğlen saati ile timezone sorununu önle
+        tarihDegeri = tarihObj;
+      } else {
+        tarihDegeri = recordData.tarih;
+      }
+    } catch (e) {
+      tarihDegeri = recordData.tarih;
+    }
+  }
+  
   // Prepare row data
   const row = [
     id,                                    // A: ID
-    recordData.tarih || '',                // B: Tarih
+    tarihDegeri,                           // B: Tarih
     recordData.kaynak || '',               // C: Kaynak
     recordData.hedef || '',                // D: Hedef
     recordData.hedefBolge || '',           // E: Hedef Bölge
@@ -418,10 +436,28 @@ function updateRecord(data) {
   // Get existing record
   const row = sheet.getRange(rowIndex, 1, 1, 13).getValues()[0];
   
+  // Tarihi doğru şekilde parse et (timezone dönüşümü yapma)
+  let tarihDegeri = row[1] || ''; // Mevcut tarihi koru
+  if (data.recordData.tarih) {
+    try {
+      // YYYY-MM-DD formatında ise, yerel tarih olarak parse et
+      if (typeof data.recordData.tarih === 'string' && data.recordData.tarih.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [yil, ay, gun] = data.recordData.tarih.split('-').map(Number);
+        // Yerel tarih olarak oluştur (timezone dönüşümü yapmadan)
+        const tarihObj = new Date(yil, ay - 1, gun, 12, 0, 0); // Öğlen saati ile timezone sorununu önle
+        tarihDegeri = tarihObj;
+      } else {
+        tarihDegeri = data.recordData.tarih;
+      }
+    } catch (e) {
+      tarihDegeri = data.recordData.tarih || row[1] || '';
+    }
+  }
+  
   // Update row data
   const updatedRow = [
     row[0] || '',                           // A: ID (preserve)
-    data.recordData.tarih || row[1] || '',           // B: Tarih
+    tarihDegeri,                            // B: Tarih
     data.recordData.kaynak || row[2] || '',         // C: Kaynak
     data.recordData.hedef || row[3] || '',          // D: Hedef
     data.recordData.hedefBolge || row[4] || '',     // E: Hedef Bölge

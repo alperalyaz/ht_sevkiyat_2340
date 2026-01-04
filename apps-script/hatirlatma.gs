@@ -57,11 +57,13 @@ function sendDailyReminders() {
     
     Logger.log('Sheet\'ler başarıyla açıldı');
     
-    // Bugünün tarihi
+    // Bugünün tarihi (Türkiye saati - UTC+3)
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = Utilities.formatDate(today, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-    Logger.log('Bugünün tarihi: ' + todayStr);
+    // Türkiye saatine çevir (UTC+3)
+    const turkiyeSaati = new Date(today.getTime() + (3 * 60 * 60 * 1000));
+    turkiyeSaati.setUTCHours(0, 0, 0, 0);
+    const todayStr = Utilities.formatDate(turkiyeSaati, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    Logger.log('Bugünün tarihi (Türkiye saati): ' + todayStr);
     
     // Personel listesini al
     const personelData = personelSheet.getDataRange().getValues();
@@ -99,8 +101,10 @@ function sendDailyReminders() {
       // Bugünün tarihine sahip ve durumu "Bekliyor" veya "Yolda" olanları filtrele
       if (sevkiyat['Tarih'] && sevkiyat['Durum']) {
         const sevkiyatTarih = new Date(sevkiyat['Tarih']);
-        sevkiyatTarih.setHours(0, 0, 0, 0);
-        const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarih, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        // Türkiye saatine çevir (UTC+3)
+        const sevkiyatTarihTurkiye = new Date(sevkiyatTarih.getTime() + (3 * 60 * 60 * 1000));
+        sevkiyatTarihTurkiye.setUTCHours(0, 0, 0, 0);
+        const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
         
         if (sevkiyatTarihStr === todayStr && 
             (sevkiyat['Durum'] === 'Bekliyor' || sevkiyat['Durum'] === 'Yolda')) {
@@ -265,4 +269,231 @@ function createEmailBody(isim, sevkiyatList) {
  */
 function testSendDailyReminders() {
   sendDailyReminders();
+}
+
+/**
+ * Günlük Rapor Fonksiyonu
+ * Her gün 19:00-20:00 arası çalışacak şekilde trigger kurulmalıdır.
+ */
+function sendDailyReport() {
+  try {
+    Logger.log('Günlük rapor oluşturuluyor...');
+    
+    // Sheet'i aç
+    let spreadsheet;
+    try {
+      spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      Logger.log('Sheet başarıyla açıldı: ' + spreadsheet.getName());
+    } catch (error) {
+      Logger.log('HATA: Sheet açılamadı! Hata: ' + error.toString());
+      return;
+    }
+    
+    const sevkiyatlarSheet = spreadsheet.getSheetByName(SEVKIYATLAR_SHEET);
+    const personelSheet = spreadsheet.getSheetByName(PERSONEL_SHEET);
+    
+    if (!sevkiyatlarSheet || !personelSheet) {
+      Logger.log('Sheet bulunamadı!');
+      return;
+    }
+    
+    // Bugünün tarihi (Türkiye saati - UTC+3)
+    const today = new Date();
+    const turkiyeSaati = new Date(today.getTime() + (3 * 60 * 60 * 1000));
+    turkiyeSaati.setUTCHours(0, 0, 0, 0);
+    const todayStr = Utilities.formatDate(turkiyeSaati, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    Logger.log('Rapor tarihi (Türkiye saati): ' + todayStr);
+    
+    // Tüm sevkiyatları al
+    const sevkiyatData = sevkiyatlarSheet.getDataRange().getValues();
+    const sevkiyatHeaders = sevkiyatData[0];
+    const sevkiyatlar = [];
+    
+    for (let i = 1; i < sevkiyatData.length; i++) {
+      const row = sevkiyatData[i];
+      const sevkiyat = {};
+      sevkiyatHeaders.forEach((header, index) => {
+        sevkiyat[header] = row[index];
+      });
+      sevkiyatlar.push(sevkiyat);
+    }
+    
+    // Bugün eklenen kayıtlar
+    const bugunEklenenler = [];
+    // Bugün tamamlanan kayıtlar
+    const bugunTamamlananlar = [];
+    // Bugün için planlanmış ama tamamlanmamış kayıtlar
+    const bugunPlanlanmisTamamlanmamis = [];
+    
+    for (const sevkiyat of sevkiyatlar) {
+      // Bugün eklenen kayıtlar (Kayıt Zamanı bugün)
+      if (sevkiyat['Kayıt Zamanı']) {
+        const kayitTarih = new Date(sevkiyat['Kayıt Zamanı']);
+        const kayitTarihTurkiye = new Date(kayitTarih.getTime() + (3 * 60 * 60 * 1000));
+        kayitTarihTurkiye.setUTCHours(0, 0, 0, 0);
+        const kayitTarihStr = Utilities.formatDate(kayitTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        
+        if (kayitTarihStr === todayStr) {
+          bugunEklenenler.push(sevkiyat);
+        }
+      }
+      
+      // Bugün tamamlanan kayıtlar (Tamamlanma Zamanı bugün)
+      if (sevkiyat['Tamamlanma Zamanı']) {
+        const tamamlanmaTarih = new Date(sevkiyat['Tamamlanma Zamanı']);
+        const tamamlanmaTarihTurkiye = new Date(tamamlanmaTarih.getTime() + (3 * 60 * 60 * 1000));
+        tamamlanmaTarihTurkiye.setUTCHours(0, 0, 0, 0);
+        const tamamlanmaTarihStr = Utilities.formatDate(tamamlanmaTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        
+        if (tamamlanmaTarihStr === todayStr) {
+          bugunTamamlananlar.push(sevkiyat);
+        }
+      }
+      
+      // Bugün için planlanmış ama tamamlanmamış kayıtlar
+      if (sevkiyat['Tarih'] && sevkiyat['Durum']) {
+        const sevkiyatTarih = new Date(sevkiyat['Tarih']);
+        const sevkiyatTarihTurkiye = new Date(sevkiyatTarih.getTime() + (3 * 60 * 60 * 1000));
+        sevkiyatTarihTurkiye.setUTCHours(0, 0, 0, 0);
+        const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+        
+        if (sevkiyatTarihStr === todayStr && 
+            (sevkiyat['Durum'] === 'Bekliyor' || sevkiyat['Durum'] === 'Yolda')) {
+          bugunPlanlanmisTamamlanmamis.push(sevkiyat);
+        }
+      }
+    }
+    
+    Logger.log(`Bugün eklenen kayıt sayısı: ${bugunEklenenler.length}`);
+    Logger.log(`Bugün tamamlanan kayıt sayısı: ${bugunTamamlananlar.length}`);
+    Logger.log(`Bugün planlanmış ama tamamlanmamış kayıt sayısı: ${bugunPlanlanmisTamamlanmamis.length}`);
+    
+    // Rapor mailini oluştur
+    const subject = `Hidroteknik - Günlük Sevkiyat Raporu (${todayStr})`;
+    const body = createDailyReportBody(todayStr, bugunEklenenler, bugunTamamlananlar, bugunPlanlanmisTamamlanmamis);
+    
+    // Yönetici mail adresi - Buraya yönetici mail adresinizi yazın
+    // TODO: Yönetici mail adresini buraya ekleyin
+    const adminEmail = 'hidroteknikas@gmail.com'; // Buraya yönetici mail adresinizi yazın
+    
+    // Mail gönder
+    try {
+      GmailApp.sendEmail(adminEmail, subject, body, {
+        from: 'hidroteknikas@gmail.com',
+        name: 'Hidroteknik Sevkiyat Takip Sistemi'
+      });
+      
+      Logger.log(`✓ Günlük rapor gönderildi: ${adminEmail}`);
+    } catch (error) {
+      Logger.log(`✗ Günlük rapor gönderilemedi (${adminEmail}): ${error.toString()}`);
+    }
+    
+  } catch (error) {
+    Logger.log('Günlük rapor hatası: ' + error.toString());
+  }
+}
+
+/**
+ * Günlük rapor mail içeriğini oluştur
+ */
+function createDailyReportBody(tarih, eklenenler, tamamlananlar, planlanmisTamamlanmamis) {
+  let body = `Hidroteknik Sevkiyat Takip Sistemi - Günlük Rapor\n\n`;
+  body += `Tarih: ${tarih}\n`;
+  body += `Rapor Saati: ${new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })}\n\n`;
+  body += `═`.repeat(50) + `\n\n`;
+  
+  // Bugün eklenen kayıtlar
+  body += `📝 BUGÜN EKLENEN KAYITLAR (${eklenenler.length} adet)\n`;
+  body += `─`.repeat(50) + `\n\n`;
+  
+  if (eklenenler.length === 0) {
+    body += `Bugün eklenen kayıt bulunmamaktadır.\n\n`;
+  } else {
+    eklenenler.forEach((sevkiyat, index) => {
+      body += `${index + 1}. ${sevkiyat['ID'] || ''}\n`;
+      body += `   Tarih: ${sevkiyat['Tarih'] || ''}\n`;
+      body += `   Rota: ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (${sevkiyat['Hedef Bölge'] || ''})\n`;
+      if (sevkiyat['Açıklama']) {
+        body += `   Açıklama: ${sevkiyat['Açıklama']}\n`;
+      }
+      if (sevkiyat['Kaynak Muhatap']) {
+        body += `   Kaynak Muhatap: ${sevkiyat['Kaynak Muhatap']}\n`;
+      }
+      if (sevkiyat['Hedef Muhatap']) {
+        body += `   Hedef Muhatap: ${sevkiyat['Hedef Muhatap']}\n`;
+      }
+      body += `   Dağıtımcı: ${sevkiyat['Dağıtımcı'] || 'Atanmamış'}\n`;
+      body += `   Durum: ${sevkiyat['Durum'] || 'Bekliyor'}\n`;
+      body += `   Kaydı Giren: ${sevkiyat['Kaydı Giren'] || ''}\n`;
+      body += `   Kayıt Zamanı: ${sevkiyat['Kayıt Zamanı'] || ''}\n`;
+      body += `\n`;
+    });
+  }
+  
+  body += `═`.repeat(50) + `\n\n`;
+  
+  // Bugün tamamlanan kayıtlar
+  body += `✅ BUGÜN TAMAMLANAN KAYITLAR (${tamamlananlar.length} adet)\n`;
+  body += `─`.repeat(50) + `\n\n`;
+  
+  if (tamamlananlar.length === 0) {
+    body += `Bugün tamamlanan kayıt bulunmamaktadır.\n\n`;
+  } else {
+    tamamlananlar.forEach((sevkiyat, index) => {
+      body += `${index + 1}. ${sevkiyat['ID'] || ''}\n`;
+      body += `   Tarih: ${sevkiyat['Tarih'] || ''}\n`;
+      body += `   Rota: ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (${sevkiyat['Hedef Bölge'] || ''})\n`;
+      if (sevkiyat['Açıklama']) {
+        body += `   Açıklama: ${sevkiyat['Açıklama']}\n`;
+      }
+      if (sevkiyat['Dağıtımcı']) {
+        body += `   Dağıtımcı: ${sevkiyat['Dağıtımcı']}\n`;
+      }
+      body += `   Tamamlanma Zamanı: ${sevkiyat['Tamamlanma Zamanı'] || ''}\n`;
+      body += `\n`;
+    });
+  }
+  
+  body += `═`.repeat(50) + `\n\n`;
+  
+  // Bugün için planlanmış ama tamamlanmamış kayıtlar
+  body += `⚠️ BUGÜN PLANLANMIŞ AMA TAMAMLANMAMIŞ KAYITLAR (${planlanmisTamamlanmamis.length} adet)\n`;
+  body += `─`.repeat(50) + `\n\n`;
+  
+  if (planlanmisTamamlanmamis.length === 0) {
+    body += `Bugün için planlanmış ama tamamlanmamış kayıt bulunmamaktadır.\n\n`;
+  } else {
+    planlanmisTamamlanmamis.forEach((sevkiyat, index) => {
+      body += `${index + 1}. ${sevkiyat['ID'] || ''}\n`;
+      body += `   Tarih: ${sevkiyat['Tarih'] || ''}\n`;
+      body += `   Rota: ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (${sevkiyat['Hedef Bölge'] || ''})\n`;
+      if (sevkiyat['Açıklama']) {
+        body += `   Açıklama: ${sevkiyat['Açıklama']}\n`;
+      }
+      if (sevkiyat['Kaynak Muhatap']) {
+        body += `   Kaynak Muhatap: ${sevkiyat['Kaynak Muhatap']}\n`;
+      }
+      if (sevkiyat['Hedef Muhatap']) {
+        body += `   Hedef Muhatap: ${sevkiyat['Hedef Muhatap']}\n`;
+      }
+      body += `   Dağıtımcı: ${sevkiyat['Dağıtımcı'] || 'Atanmamış'}\n`;
+      body += `   Durum: ${sevkiyat['Durum'] || 'Bekliyor'}\n`;
+      body += `\n`;
+    });
+  }
+  
+  body += `═`.repeat(50) + `\n\n`;
+  body += `Sevkiyat takip sistemine girmek için: ${APP_URL}\n\n`;
+  body += `---\n`;
+  body += `Bu otomatik bir günlük rapordur.\n`;
+  body += `Hidroteknik Sevkiyat Takip Sistemi`;
+  
+  return body;
+}
+
+/**
+ * Test fonksiyonu (manuel çalıştırma için)
+ */
+function testSendDailyReport() {
+  sendDailyReport();
 }

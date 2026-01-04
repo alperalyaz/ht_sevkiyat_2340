@@ -365,9 +365,17 @@ function addRecord(recordData) {
     throw new Error('Sevkiyatlar sheet\'i bulunamadı');
   }
   
-  // Generate ID
-  const id = 'SEV-' + Date.now();
-  const now = new Date().toISOString();
+  // Generate ID - Format: SEV-YYMMDDHHMM (Türkiye saati)
+  const now = new Date();
+  // Türkiye saatine çevir (UTC+3)
+  const turkiyeSaati = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+  const year = turkiyeSaati.getUTCFullYear().toString().slice(-2); // Son 2 hanesi
+  const month = (turkiyeSaati.getUTCMonth() + 1).toString().padStart(2, '0'); // Ay (01-12)
+  const day = turkiyeSaati.getUTCDate().toString().padStart(2, '0'); // Gün (01-31)
+  const hour = turkiyeSaati.getUTCHours().toString().padStart(2, '0'); // Saat (00-23)
+  const minute = turkiyeSaati.getUTCMinutes().toString().padStart(2, '0'); // Dakika (00-59)
+  const id = 'SEV-' + year + month + day + hour + minute;
+  const nowISO = turkiyeSaati.toISOString();
   
   // Prepare row data
   const row = [
@@ -382,7 +390,7 @@ function addRecord(recordData) {
     recordData.dagitimci || '',            // I: Dağıtımcı
     recordData.kaydiGiren || '',           // J: Kaydı Giren
     'Bekliyor',                            // K: Durum
-    now,                                   // L: Kayıt Zamanı
+    nowISO,                                // L: Kayıt Zamanı
     ''                                     // M: Tamamlanma Zamanı
   ];
   
@@ -470,14 +478,17 @@ function updateStatus(data) {
   }
   
   const newStatus = data.newStatus || 'Bekliyor';
-  const now = new Date().toISOString();
+  // Türkiye saatine çevir (UTC+3)
+  const now = new Date();
+  const turkiyeSaati = new Date(now.getTime() + (3 * 60 * 60 * 1000));
+  const nowISO = turkiyeSaati.toISOString();
   
   // Update status (column K = 11)
   sheet.getRange(rowIndex, 11).setValue(newStatus);
   
   // Update completion time if completed (column M = 13)
   if (newStatus === 'Tamamlandı') {
-    sheet.getRange(rowIndex, 13).setValue(now);
+    sheet.getRange(rowIndex, 13).setValue(nowISO);
   }
   
   return { success: true };

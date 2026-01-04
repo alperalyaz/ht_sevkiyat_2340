@@ -173,24 +173,29 @@ const App = {
     
     // Check if user can edit record
     canEditRecord(record) {
+        const currentUserName = Auth.getCurrentUserName();
+        // Hem tam isim hem de eski format (email kısa adı) ile karşılaştır
         const currentUser = Auth.getCurrentUser();
-        return record['Kaydı Giren'] === currentUser;
+        return record['Kaydı Giren'] === currentUserName || record['Kaydı Giren'] === currentUser;
     },
     
     // Check if user can delete record
     canDeleteRecord(record) {
+        const currentUserName = Auth.getCurrentUserName();
+        // Hem tam isim hem de eski format (email kısa adı) ile karşılaştır
         const currentUser = Auth.getCurrentUser();
-        return record['Kaydı Giren'] === currentUser;
+        return record['Kaydı Giren'] === currentUserName || record['Kaydı Giren'] === currentUser;
     },
     
     // Check if user can complete record
     canCompleteRecord(record) {
-        const currentUser = Auth.getCurrentUser();
+        const currentUserName = Auth.getCurrentUserName();
         const kaydiGiren = record['Kaydı Giren'];
         const dagitimci = record.Dağıtımcı;
         
         // Kaydı giren veya dağıtımcı tamamlandı işaretleyebilir
-        return kaydiGiren === currentUser || dagitimci === currentUser;
+        // Hem tam isim hem de eski format (email kısa adı) ile karşılaştır
+        return kaydiGiren === currentUserName || kaydiGiren === Auth.getCurrentUser() || dagitimci === currentUserName;
     }
 };
 

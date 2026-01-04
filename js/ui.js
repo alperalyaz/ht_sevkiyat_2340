@@ -164,38 +164,42 @@ const UI = {
         `).join('');
     },
     
-    // Tarih formatını Türkçe olarak göster (04 Ocak 2026 gibi)
+    // Tarih formatını Türkçe olarak göster (05 Ocak 2026 Pazartesi gibi)
     formatSadeceTarih(tarihStr) {
         if (!tarihStr) return '';
         try {
             const tarihString = String(tarihStr);
+            let tarihObj = null;
             
             // ISO formatında gelirse (2026-01-05T21:00:00.000Z gibi) - sadece tarih kısmını al
             if (tarihString.includes('T')) {
                 const tarihPart = tarihString.split('T')[0]; // "2026-01-05"
-                const [yil, ay, gun] = tarihPart.split('-');
-                const ayIsimleri = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-                return `${gun} ${ayIsimleri[parseInt(ay) - 1]} ${yil}`;
+                const [yil, ay, gun] = tarihPart.split('-').map(Number);
+                tarihObj = new Date(yil, ay - 1, gun);
+            }
+            // YYYY-MM-DD formatındaysa
+            else if (tarihString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const [yil, ay, gun] = tarihString.split('-').map(Number);
+                tarihObj = new Date(yil, ay - 1, gun);
+            }
+            // Diğer formatlar için Date objesi oluştur
+            else {
+                tarihObj = new Date(tarihStr);
+                if (isNaN(tarihObj.getTime())) {
+                    return tarihString;
+                }
             }
             
-            // YYYY-MM-DD formatındaysa direkt kullan
-            if (tarihString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                const [yil, ay, gun] = tarihString.split('-');
-                const ayIsimleri = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-                return `${gun} ${ayIsimleri[parseInt(ay) - 1]} ${yil}`;
-            }
+            // Türkçe format: 05 Ocak 2026 Pazartesi
+            const ayIsimleri = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+            const gunIsimleri = ['Pazar', 'Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi'];
             
-            // Diğer formatlar için Date objesi kullan (ama yerel tarih bilgisini al)
-            const tarih = new Date(tarihStr);
-            if (!isNaN(tarih.getTime())) {
-                const ayIsimleri = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
-                const gun = tarih.getDate().toString().padStart(2, '0'); // getDate() yerel tarih kullanır
-                const ay = ayIsimleri[tarih.getMonth()]; // getMonth() yerel ay kullanır
-                const yil = tarih.getFullYear(); // getFullYear() yerel yıl kullanır
-                return `${gun} ${ay} ${yil}`;
-            }
+            const gun = tarihObj.getDate().toString().padStart(2, '0');
+            const ay = ayIsimleri[tarihObj.getMonth()];
+            const yil = tarihObj.getFullYear();
+            const gunAdi = gunIsimleri[tarihObj.getDay()];
             
-            return tarihString;
+            return `${gun} ${ay} ${yil} ${gunAdi}`;
         } catch (e) {
             return String(tarihStr || '');
         }

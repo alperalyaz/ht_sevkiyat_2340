@@ -213,8 +213,8 @@ const SheetsAPI = {
                 throw new Error('Yazma işlemleri için Web App URL gerekli. Lütfen Google Apps Script\'te web app deploy edin.');
             }
             
-            // Add current user to record data
-            recordData.kaydiGiren = Auth.getCurrentUser();
+            // Add current user to record data (tam isim)
+            recordData.kaydiGiren = Auth.getCurrentUserName();
             const userEmail = Auth.getCurrentUserEmail();
             
             return await this.webAppRequest('addRecord', { recordData, email: userEmail });

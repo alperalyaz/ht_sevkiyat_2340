@@ -3,6 +3,7 @@
 const Auth = {
     currentUser: null,
     currentUserEmail: null,
+    currentUserName: null, // Kullanıcının tam adı
     
     // Initialize authentication
     init() {
@@ -114,15 +115,26 @@ const Auth = {
                 return;
             }
             
-            // Mail adresinden kullanıcı adını al (mail'in @ öncesi kısmı veya tam mail)
-            // Personel tablosundan isim almak için getPersonel kullanabiliriz ama güvenlik için sadece mail gösterelim
-            const displayName = userEmail.split('@')[0]; // Mail'in @ öncesi kısmı
+            // Personel listesinden kullanıcının ismini al
+            let userName = userEmail.split('@')[0]; // Varsayılan: mail'in @ öncesi kısmı
+            try {
+                const personel = await SheetsAPI.getPersonel();
+                const person = personel.find(p => p.Mail && p.Mail.toLowerCase() === userEmail.toLowerCase());
+                if (person && person.İsim) {
+                    userName = person.İsim; // Personel tablosundan ismi al
+                }
+            } catch (e) {
+                console.error('Personel listesi alınamadı:', e);
+                // Hata olsa bile devam et, varsayılan ismi kullan
+            }
             
             // Mail adresi geçerli, giriş yap
-            this.currentUser = displayName; // Mail'in @ öncesi kısmını kullanıcı adı olarak göster
+            this.currentUser = userEmail.split('@')[0]; // Email kısa adı (eski kod için)
             this.currentUserEmail = userEmail;
-            localStorage.setItem('currentUser', displayName);
+            this.currentUserName = userName; // Tam isim
+            localStorage.setItem('currentUser', userEmail.split('@')[0]);
             localStorage.setItem('currentUserEmail', userEmail);
+            localStorage.setItem('currentUserName', userName);
             this.showDashboard();
         } catch (error) {
             console.error('Giriş hatası:', error);
@@ -134,8 +146,10 @@ const Auth = {
     logout() {
         this.currentUser = null;
         this.currentUserEmail = null;
+        this.currentUserName = null;
         localStorage.removeItem('currentUser');
         localStorage.removeItem('currentUserEmail');
+        localStorage.removeItem('currentUserName');
         this.showLogin();
     },
     
@@ -143,9 +157,11 @@ const Auth = {
     loadUser() {
         const savedUser = localStorage.getItem('currentUser');
         const savedEmail = localStorage.getItem('currentUserEmail');
+        const savedUserName = localStorage.getItem('currentUserName');
         if (savedUser && savedEmail) {
             this.currentUser = savedUser;
             this.currentUserEmail = savedEmail;
+            this.currentUserName = savedUserName || savedUser; // Varsayılan olarak kısa adı kullan
             this.showDashboard();
         } else {
             this.showLogin();
@@ -168,8 +184,16 @@ const Auth = {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboard').classList.remove('hidden');
         // Kullanıcı adı ve mail adresini göster
-        const userDisplay = this.currentUser + (this.currentUserEmail ? ` (${this.currentUserEmail})` : '');
-        document.getElementById('currentUser').textContent = userDisplay;
+        const currentUserEl = document.getElementById('currentUser');
+        if (currentUserEl) {
+            if (this.currentUserName && this.currentUserEmail) {
+                currentUserEl.textContent = `Hoşgeldin ${this.currentUserName} (${this.currentUserEmail})`;
+            } else if (this.currentUserEmail) {
+                currentUserEl.textContent = `Hoşgeldin ${this.currentUser} (${this.currentUserEmail})`;
+            } else {
+                currentUserEl.textContent = this.currentUser || '';
+            }
+        }
         
         // Load data when dashboard is shown
         if (typeof App !== 'undefined') {
@@ -185,6 +209,11 @@ const Auth = {
     // Get current user email
     getCurrentUserEmail() {
         return this.currentUserEmail || localStorage.getItem('currentUserEmail');
+    },
+    
+    // Get current user name (tam isim)
+    getCurrentUserName() {
+        return this.currentUserName || this.currentUser;
     },
     
     // Check if user is logged in

@@ -18,7 +18,7 @@ const CONFIG = {
     
     // Google Apps Script Web App URL (yazma işlemleri için)
     // Bu URL'yi Google Apps Script'te web app deploy ettikten sonra buraya yapıştırın
-    WEB_APP_URL: 'https://script.google.com/macros/s/AKfycby65Ns4lRdmaZpYxtWQSJUCXcDgurPO3WqkgaUhQXE7Nje5fFoLPQ-jDcohiSFWv7lepg/exec',
+    WEB_APP_URL: 'https://script.google.com/macros/s/AKfycbwkNJspUg8staJR-WumM5oZJHipSHXujR-qGcJ0AVtWYd30Q3vGIFa8W-COJ7kaoSEuKA/exec',
     
     // Sheet Names
     SHEETS: {

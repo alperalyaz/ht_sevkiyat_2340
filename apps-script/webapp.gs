@@ -20,26 +20,8 @@ const SHEET_ID = '1hU_I2xrJt28tsum7TkmzOMZJq5LaI67v17dU65S5wjY';
 const SEVKIYATLAR_SHEET = 'Sevkiyatlar';
 const PERSONEL_SHEET = 'Personel';
 
-/**
- * CORS headers helper
- */
-function getCorsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization'
-  };
-}
-
-/**
- * Handle OPTIONS request for CORS preflight
- */
-function doOptions() {
-  return ContentService
-    .createTextOutput('')
-    .setMimeType(ContentService.MimeType.TEXT)
-    .setHeaders(getCorsHeaders());
-}
+// Note: Google Apps Script ContentService doesn't support setHeaders()
+// CORS is handled by deployment settings: "Who has access: Anyone"
 
 /**
  * Main doGet/doPost handler
@@ -106,14 +88,12 @@ function doPost(e) {
     
     return ContentService
       .createTextOutput(JSON.stringify({ success: true, data: result }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(getCorsHeaders());
+      .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
     return ContentService
       .createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(getCorsHeaders());
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 
@@ -126,16 +106,14 @@ function doGet(e) {
       const result = getSevkiyatlar();
       return ContentService
         .createTextOutput(JSON.stringify({ success: true, data: result }))
-        .setMimeType(ContentService.MimeType.JSON)
-        .setHeaders(getCorsHeaders());
+        .setMimeType(ContentService.MimeType.JSON);
     }
     
     if (action === 'getPersonel') {
       const result = getPersonel();
       return ContentService
         .createTextOutput(JSON.stringify({ success: true, data: result }))
-        .setMimeType(ContentService.MimeType.JSON)
-        .setHeaders(getCorsHeaders());
+        .setMimeType(ContentService.MimeType.JSON);
     }
     
     // Test için: action yoksa bilgi mesajı döndür
@@ -145,14 +123,12 @@ function doGet(e) {
         message: 'Web App çalışıyor! POST isteği ile action parametresi gönderin.',
         availableActions: ['getSevkiyatlar', 'getPersonel', 'addRecord', 'updateRecord', 'deleteRecord', 'updateStatus']
       }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(getCorsHeaders());
+      .setMimeType(ContentService.MimeType.JSON);
       
   } catch (error) {
     return ContentService
       .createTextOutput(JSON.stringify({ success: false, error: error.toString() }))
-      .setMimeType(ContentService.MimeType.JSON)
-      .setHeaders(getCorsHeaders());
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
 

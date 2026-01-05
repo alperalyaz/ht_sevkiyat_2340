@@ -93,3 +93,69 @@ tbody tr:hover {
     background: #555;
 }
 
+/* Print Styles */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    
+    #printArea, #printArea * {
+        visibility: visible;
+    }
+    
+    #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+    }
+    
+    .print-table th,
+    .print-table td {
+        border: 1px solid #ddd;
+        padding: 4px 6px;
+        text-align: left;
+    }
+    
+    .print-table th {
+        background-color: #f3f4f6;
+        font-weight: bold;
+    }
+    
+    .print-table tr:nth-child(even) {
+        background-color: #f9fafb;
+    }
+    
+    .print-header {
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    
+    .print-header h1 {
+        font-size: 18px;
+        margin: 0;
+        font-weight: bold;
+    }
+    
+    .print-header p {
+        font-size: 11px;
+        margin: 5px 0;
+        color: #666;
+    }
+    
+    @page {
+        margin: 1cm;
+        size: A4;
+    }
+}
+

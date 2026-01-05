@@ -438,6 +438,161 @@ const UI = {
     showSuccess(message) {
         // Simple alert for now, can be enhanced with toast notifications
         alert('Başarılı: ' + message);
+    },
+    
+    // Print pending records (only Bekliyor and Yolda status)
+    printPendingRecords() {
+        // Filter only pending records (not completed or cancelled)
+        const pendingRecords = this.allRecords.filter(record => {
+            const durum = record.Durum || 'Bekliyor';
+            return durum !== 'Tamamlandı' && durum !== 'İptal';
+        });
+        
+        if (pendingRecords.length === 0) {
+            alert('Yazdırılacak bekleyen kayıt bulunamadı.');
+            return;
+        }
+        
+        // Create print-friendly HTML
+        const printDate = new Date().toLocaleDateString('tr-TR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        let printHTML = `
+            <div id="printArea" style="font-family: Arial, sans-serif;">
+                <div class="print-header">
+                    <h1>Hidroteknik Sevkiyat Takip Sistemi</h1>
+                    <p>Bekleyen Sevkiyatlar Listesi</p>
+                    <p style="font-size: 10px; color: #666;">Yazdırma Tarihi: ${printDate}</p>
+                    <p style="font-size: 10px; color: #666;">Toplam Kayıt: ${pendingRecords.length}</p>
+                </div>
+                <table class="print-table" style="width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #f3f4f6;">
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 10%;">ID</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 12%;">Tarih</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 15%;">Kaynak</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 15%;">Hedef</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 12%;">Hedef Bölge</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 15%;">Dağıtımcı</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 10%;">Durum</th>
+                            <th style="border: 1px solid #ddd; padding: 6px; text-align: left; font-weight: bold; width: 11%;">Açıklama</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        pendingRecords.forEach((record, index) => {
+            const rowColor = index % 2 === 0 ? '#ffffff' : '#f9fafb';
+            const durum = record.Durum || 'Bekliyor';
+            
+            // Determine if overdue
+            let statusText = durum;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            if (record.Tarih) {
+                const recordDate = new Date(record.Tarih);
+                recordDate.setHours(0, 0, 0, 0);
+                if (recordDate < today && durum !== 'Tamamlandı' && durum !== 'İptal') {
+                    statusText = durum + ' (Gecikmiş)';
+                }
+            }
+            
+            printHTML += `
+                <tr style="background-color: ${rowColor};">
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${record.ID || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${this.formatSadeceTarih(record.Tarih)}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${record.Kaynak || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${record.Hedef || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${record['Hedef Bölge'] || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${record.Dağıtımcı || 'Atanmamış'}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px;">${statusText}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px; font-size: 8px;">${(record.Açıklama || '').substring(0, 50)}${record.Açıklama && record.Açıklama.length > 50 ? '...' : ''}</td>
+                </tr>
+            `;
+        });
+        
+        printHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        // Create a new window for printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Bekleyen Sevkiyatlar - Yazdır</title>
+                <style>
+                    @media print {
+                        @page {
+                            margin: 1cm;
+                            size: A4;
+                        }
+                        body {
+                            margin: 0;
+                            padding: 0;
+                        }
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 20px;
+                    }
+                    .print-header {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    .print-header h1 {
+                        font-size: 18px;
+                        margin: 0 0 5px 0;
+                        font-weight: bold;
+                    }
+                    .print-header p {
+                        font-size: 11px;
+                        margin: 3px 0;
+                        color: #666;
+                    }
+                    .print-table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 9px;
+                        margin-top: 10px;
+                    }
+                    .print-table th,
+                    .print-table td {
+                        border: 1px solid #ddd;
+                        padding: 4px 6px;
+                        text-align: left;
+                    }
+                    .print-table th {
+                        background-color: #f3f4f6;
+                        font-weight: bold;
+                    }
+                    .print-table tr:nth-child(even) {
+                        background-color: #f9fafb;
+                    }
+                </style>
+            </head>
+            <body>
+                ${printHTML}
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+        
+        // Wait for content to load, then print
+        printWindow.onload = function() {
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
+        };
     }
 };
 

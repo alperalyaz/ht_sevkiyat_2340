@@ -336,7 +336,7 @@ const UI = {
                     <td class="px-2 py-4 whitespace-nowrap text-sm font-medium">
                         <div class="flex gap-1 flex-wrap">
                             ${canComplete && record.Durum !== 'Tamamlandı' && record.Durum !== 'İptal' ? 
-                                `<button onclick="App.completeRecord(${record.rowIndex})" class="px-2 py-0.5 bg-green-100 text-green-700 border border-green-300 rounded hover:bg-green-200 transition-colors text-xs font-medium">Tamamla</button>` : ''}
+                                `<button onclick="App.completeRecord(${record.rowIndex})" class="px-4 py-0.5 bg-green-100 text-green-700 border border-green-300 rounded hover:bg-green-200 transition-colors text-xs font-medium">Tamamla</button>` : ''}
                             ${canEdit ? 
                                 `<button onclick="App.editRecord(${record.rowIndex})" class="px-2 py-0.5 bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200 transition-colors text-xs font-medium">Düzenle</button>` : ''}
                             ${canDelete ? 

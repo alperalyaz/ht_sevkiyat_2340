@@ -555,7 +555,7 @@ const UI = {
                     <td style="border: 1px solid #ddd; padding: 4px 6px;">${record['Hedef Bölge'] || ''}</td>
                     <td style="border: 1px solid #ddd; padding: 4px 6px;">${record.Dağıtımcı || 'Atanmamış'}</td>
                     <td style="border: 1px solid #ddd; padding: 4px 6px;">${statusText}</td>
-                    <td style="border: 1px solid #ddd; padding: 4px 6px; font-size: 8px;">${(record.Açıklama || '').substring(0, 50)}${record.Açıklama && record.Açıklama.length > 50 ? '...' : ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 4px 6px; font-size: 8px; word-wrap: break-word; max-width: 200px;">${record.Açıklama || ''}</td>
                 </tr>
             `;
         });

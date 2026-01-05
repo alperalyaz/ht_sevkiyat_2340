@@ -292,8 +292,37 @@ const UI = {
             // Açıklama varsa tooltip için title attribute ekle
             const aciklamaTooltip = record.Açıklama ? `title="${record.Açıklama.replace(/"/g, '&quot;')}"` : '';
             
+            // Satır rengini belirle
+            let rowBgClass = '';
+            const durum = record.Durum || 'Bekliyor';
+            
+            if (durum === 'Tamamlandı' || durum === 'İptal') {
+                // Tamamlanan satırlar: yeşil
+                rowBgClass = 'bg-green-50 hover:bg-green-100';
+            } else {
+                // Geciken kayıtları kontrol et
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                
+                if (record.Tarih) {
+                    const recordDate = new Date(record.Tarih);
+                    recordDate.setHours(0, 0, 0, 0);
+                    
+                    if (recordDate < today) {
+                        // Geciken satırlar: kırmızı
+                        rowBgClass = 'bg-red-50 hover:bg-red-100';
+                    } else {
+                        // Bekleyen satırlar: sarı
+                        rowBgClass = 'bg-yellow-50 hover:bg-yellow-100';
+                    }
+                } else {
+                    // Tarih yoksa sarı (bekliyor)
+                    rowBgClass = 'bg-yellow-50 hover:bg-yellow-100';
+                }
+            }
+            
             return `
-                <tr ${aciklamaTooltip} class="hover:bg-gray-50 cursor-pointer">
+                <tr ${aciklamaTooltip} class="${rowBgClass} cursor-pointer">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.ID || ''}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${this.formatSadeceTarih(record.Tarih)}</td>
                     <td class="px-6 py-4 text-sm text-gray-900">${record.Kaynak || ''}</td>

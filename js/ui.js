@@ -19,9 +19,14 @@ const UI = {
         const recordModal = document.getElementById('recordModal');
         const recordForm = document.getElementById('recordForm');
         const tarih = document.getElementById('tarih');
+        const printBtn = document.getElementById('printBtn');
         
         if (addRecordBtn) {
             addRecordBtn.addEventListener('click', () => this.openAddModal());
+        }
+        
+        if (printBtn) {
+            printBtn.addEventListener('click', () => this.printPendingRecords());
         }
         
         if (closeModal) {

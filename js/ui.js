@@ -330,8 +330,8 @@ const UI = {
             
             const tbody = document.getElementById('recordsTableBody');
             const mobileView = document.getElementById('mobileRecordsView');
-        
-        if (pageRecords.length === 0) {
+            
+            if (pageRecords.length === 0) {
             if (tbody) {
                 tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Kayıt bulunamadı.</td></tr>';
             }
@@ -343,7 +343,8 @@ const UI = {
         }
         
         // Desktop table view
-        tbody.innerHTML = pageRecords.map(record => {
+        if (tbody) {
+            tbody.innerHTML = pageRecords.map(record => {
             const canEdit = App.canEditRecord(record);
             const canDelete = App.canDeleteRecord(record);
             const canComplete = App.canCompleteRecord(record);

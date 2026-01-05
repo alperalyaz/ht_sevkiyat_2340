@@ -43,23 +43,69 @@ const App = {
             UI.showLoading('todayShipments');
             UI.showLoading('overdueShipments');
             
-            this.records = await SheetsAPI.getSevkiyatlar();
+            // Check cache first
+            let records = null;
+            const cacheKey = 'sevkiyat_records_cache';
+            const cacheTimestampKey = 'sevkiyat_records_cache_timestamp';
             
-            // Sort by date (newest first), then by ID (newest first) for same dates
-            this.records.sort((a, b) => {
-                const dateA = new Date(a.Tarih || 0);
-                const dateB = new Date(b.Tarih || 0);
-                const dateDiff = dateB - dateA;
+            if (CONFIG.CACHE_ENABLED) {
+                const cachedData = localStorage.getItem(cacheKey);
+                const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
                 
-                // If dates are the same, sort by ID (newest first - descending)
-                if (dateDiff === 0) {
-                    const idA = a.ID || '';
-                    const idB = b.ID || '';
-                    return idB.localeCompare(idA);
+                if (cachedData && cacheTimestamp) {
+                    const cacheAge = (Date.now() - parseInt(cacheTimestamp)) / 1000 / 60; // minutes
+                    if (cacheAge < CONFIG.CACHE_DURATION_MINUTES) {
+                        try {
+                            records = JSON.parse(cachedData);
+                            console.log(`Cache'den yüklendi (${Math.round(cacheAge)} dakika önce)`);
+                        } catch (e) {
+                            console.warn('Cache parse hatası:', e);
+                        }
+                    }
+                }
+            }
+            
+            // If no cache or cache expired, fetch from API
+            if (!records) {
+                records = await SheetsAPI.getSevkiyatlar();
+                
+                // Sort by date (newest first), then by ID (newest first) for same dates
+                records.sort((a, b) => {
+                    const dateA = new Date(a.Tarih || 0);
+                    const dateB = new Date(b.Tarih || 0);
+                    const dateDiff = dateB - dateA;
+                    
+                    // If dates are the same, sort by ID (newest first - descending)
+                    if (dateDiff === 0) {
+                        const idA = a.ID || '';
+                        const idB = b.ID || '';
+                        return idB.localeCompare(idA);
+                    }
+                    
+                    return dateDiff;
+                });
+                
+                // Limit records if configured
+                if (CONFIG.MAX_RECORDS_TO_LOAD && CONFIG.MAX_RECORDS_TO_LOAD > 0) {
+                    const originalCount = records.length;
+                    records = records.slice(0, CONFIG.MAX_RECORDS_TO_LOAD);
+                    if (originalCount > records.length) {
+                        console.log(`${originalCount} kayıttan ${records.length} kayıt gösteriliyor (son ${CONFIG.MAX_RECORDS_TO_LOAD} kayıt)`);
+                    }
                 }
                 
-                return dateDiff;
-            });
+                // Save to cache
+                if (CONFIG.CACHE_ENABLED) {
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify(records));
+                        localStorage.setItem(cacheTimestampKey, Date.now().toString());
+                    } catch (e) {
+                        console.warn('Cache kaydedilemedi (localStorage dolu olabilir):', e);
+                    }
+                }
+            }
+            
+            this.records = records;
             
             // Render UI
             UI.renderTodayShipments(this.records);
@@ -106,6 +152,11 @@ const App = {
             }
             
             UI.closeModal();
+            // Clear cache and reload
+            if (CONFIG.CACHE_ENABLED) {
+                localStorage.removeItem('sevkiyat_records_cache');
+                localStorage.removeItem('sevkiyat_records_cache_timestamp');
+            }
             await this.loadData();
             
         } catch (error) {
@@ -147,6 +198,11 @@ const App = {
         try {
             await SheetsAPI.updateStatus(rowIndex, 'Tamamlandı');
             UI.showSuccess('Sevkiyat tamamlandı olarak işaretlendi');
+            // Clear cache and reload
+            if (CONFIG.CACHE_ENABLED) {
+                localStorage.removeItem('sevkiyat_records_cache');
+                localStorage.removeItem('sevkiyat_records_cache_timestamp');
+            }
             await this.loadData();
         } catch (error) {
             console.error('Durum güncellenirken hata:', error);
@@ -173,6 +229,11 @@ const App = {
         try {
             await SheetsAPI.deleteRecord(rowIndex);
             UI.showSuccess('Kayıt silindi');
+            // Clear cache and reload
+            if (CONFIG.CACHE_ENABLED) {
+                localStorage.removeItem('sevkiyat_records_cache');
+                localStorage.removeItem('sevkiyat_records_cache_timestamp');
+            }
             await this.loadData();
         } catch (error) {
             console.error('Kayıt silinirken hata:', error);

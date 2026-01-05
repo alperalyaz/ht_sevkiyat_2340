@@ -21,6 +21,14 @@ const CONFIG = {
     APP_URL: 'https://your-domain.com',
     
     // Pagination
-    RECORDS_PER_PAGE: 20
+    RECORDS_PER_PAGE: 20,
+    
+    // Performance Optimization
+    // Son kaç kayıt yüklenecek (0 = tüm kayıtlar, önerilen: 2000-5000)
+    MAX_RECORDS_TO_LOAD: 2000,
+    
+    // Cache ayarları
+    CACHE_ENABLED: true,
+    CACHE_DURATION_MINUTES: 5 // 5 dakika cache
 };
 

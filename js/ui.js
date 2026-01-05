@@ -141,53 +141,56 @@ const UI = {
     // Render today's shipments
     renderTodayShipments(records) {
         const container = document.getElementById('todayShipments');
-        // Bugünün tarihini al (Yerel saat)
-        const now = new Date();
-        const yil = now.getFullYear();
-        const ay = (now.getMonth() + 1).toString().padStart(2, '0');
-        const gun = now.getDate().toString().padStart(2, '0');
-        const today = `${yil}-${ay}-${gun}`;
+        if (!container) return;
         
-        // Helper function to normalize date
-        const normalizeDate = (dateValue) => {
-            if (!dateValue) return null;
+        try {
+            // Bugünün tarihini al (Yerel saat)
+            const now = new Date();
+            const yil = now.getFullYear();
+            const ay = (now.getMonth() + 1).toString().padStart(2, '0');
+            const gun = now.getDate().toString().padStart(2, '0');
+            const today = `${yil}-${ay}-${gun}`;
             
-            // If it's already in YYYY-MM-DD format
-            if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-                return dateValue;
+            // Helper function to normalize date
+            const normalizeDate = (dateValue) => {
+                if (!dateValue) return null;
+                
+                // If it's already in YYYY-MM-DD format
+                if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                    return dateValue;
+                }
+                
+                // Try to parse as Date
+                try {
+                    const date = new Date(dateValue);
+                    if (!isNaN(date.getTime())) {
+                        const year = date.getFullYear();
+                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                        const day = date.getDate().toString().padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    }
+                } catch (e) {
+                    // If parsing fails, try to extract date from string
+                    const dateMatch = String(dateValue).match(/(\d{4})-(\d{2})-(\d{2})/);
+                    if (dateMatch) {
+                        return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+                    }
+                }
+                
+                return null;
+            };
+            
+            const todayRecords = records.filter(r => {
+                const normalizedDate = normalizeDate(r.Tarih);
+                return normalizedDate === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal';
+            });
+            
+            if (todayRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">Bugün için sevkiyat bulunmamaktadır.</p>';
+                return;
             }
             
-            // Try to parse as Date
-            try {
-                const date = new Date(dateValue);
-                if (!isNaN(date.getTime())) {
-                    const year = date.getFullYear();
-                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-                    const day = date.getDate().toString().padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                }
-            } catch (e) {
-                // If parsing fails, try to extract date from string
-                const dateMatch = String(dateValue).match(/(\d{4})-(\d{2})-(\d{2})/);
-                if (dateMatch) {
-                    return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
-                }
-            }
-            
-            return null;
-        };
-        
-        const todayRecords = records.filter(r => {
-            const normalizedDate = normalizeDate(r.Tarih);
-            return normalizedDate === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal';
-        });
-        
-        if (todayRecords.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">Bugün için sevkiyat bulunmamaktadır.</p>';
-            return;
-        }
-        
-        container.innerHTML = todayRecords.map(record => `
+            container.innerHTML = todayRecords.map(record => `
             <div class="record-card">
                 <div class="flex justify-between items-start">
                     <div>
@@ -199,6 +202,10 @@ const UI = {
                 </div>
             </div>
         `).join('');
+        } catch (error) {
+            console.error('renderTodayShipments hatası:', error);
+            container.innerHTML = '<p class="text-red-500">Kayıtlar gösterilirken bir hata oluştu.</p>';
+        }
     },
     
     // Tarih formatını Türkçe olarak göster (05 Ocak 2026 Pazartesi gibi)
@@ -245,24 +252,27 @@ const UI = {
     // Render overdue shipments
     renderOverdueShipments(records) {
         const container = document.getElementById('overdueShipments');
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        if (!container) return;
         
-        const overdueRecords = records.filter(r => {
-            if (!r.Tarih || r.Durum === 'Tamamlandı' || r.Durum === 'İptal') return false;
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
             
-            const recordDate = new Date(r.Tarih);
-            recordDate.setHours(0, 0, 0, 0);
+            const overdueRecords = records.filter(r => {
+                if (!r.Tarih || r.Durum === 'Tamamlandı' || r.Durum === 'İptal') return false;
+                
+                const recordDate = new Date(r.Tarih);
+                recordDate.setHours(0, 0, 0, 0);
+                
+                return recordDate < today;
+            });
             
-            return recordDate < today;
-        });
-        
-        if (overdueRecords.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">Geciken sevkiyat bulunmamaktadır.</p>';
-            return;
-        }
-        
-        container.innerHTML = overdueRecords.map(record => `
+            if (overdueRecords.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">Geciken sevkiyat bulunmamaktadır.</p>';
+                return;
+            }
+            
+            container.innerHTML = overdueRecords.map(record => `
             <div class="record-card border-l-4 border-red-500">
                 <div class="flex justify-between items-start">
                     <div>
@@ -275,6 +285,10 @@ const UI = {
                 </div>
             </div>
         `).join('');
+        } catch (error) {
+            console.error('renderOverdueShipments hatası:', error);
+            container.innerHTML = '<p class="text-red-500">Kayıtlar gösterilirken bir hata oluştu.</p>';
+        }
     },
     
     // Tarih formatını Türkçe'ye çevir

@@ -321,6 +321,7 @@ const UI = {
             return;
         }
         
+        // Desktop table view
         tbody.innerHTML = pageRecords.map(record => {
             const canEdit = App.canEditRecord(record);
             const canDelete = App.canDeleteRecord(record);
@@ -360,14 +361,14 @@ const UI = {
             
             return `
                 <tr ${aciklamaTooltip} class="${rowBgClass} cursor-pointer">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.ID || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${this.formatSadeceTarih(record.Tarih)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">${record.Kaynak || ''}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">${record.Hedef || ''}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">${record['Hedef Bölge'] || ''}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">${record.Dağıtımcı || 'Atanmamış'}</td>
-                    <td class="px-6 py-4 text-sm text-gray-900">${record['Kaydı Giren'] || ''}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
+                    <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.ID || ''}</td>
+                    <td class="px-4 lg:px-6 py-4 whitespace-nowrap text-sm text-gray-900">${this.formatSadeceTarih(record.Tarih)}</td>
+                    <td class="px-4 lg:px-6 py-4 text-sm text-gray-900">${record.Kaynak || ''}</td>
+                    <td class="px-4 lg:px-6 py-4 text-sm text-gray-900">${record.Hedef || ''}</td>
+                    <td class="px-4 lg:px-6 py-4 text-sm text-gray-900">${record['Hedef Bölge'] || ''}</td>
+                    <td class="px-4 lg:px-6 py-4 text-sm text-gray-900">${record.Dağıtımcı || 'Atanmamış'}</td>
+                    <td class="px-4 lg:px-6 py-4 text-sm text-gray-900">${record['Kaydı Giren'] || ''}</td>
+                    <td class="px-4 lg:px-6 py-4 whitespace-nowrap">
                         <span class="status-badge status-${record.Durum?.toLowerCase() || 'bekliyor'}">${record.Durum || 'Bekliyor'}</span>
                     </td>
                     <td class="px-2 py-4 whitespace-nowrap text-sm font-medium">
@@ -384,6 +385,95 @@ const UI = {
             `;
         }).join('');
         
+        // Mobile card view
+        const mobileView = document.getElementById('mobileRecordsView');
+        if (mobileView) {
+            if (pageRecords.length === 0) {
+                mobileView.innerHTML = '<p class="text-center text-gray-500">Kayıt bulunamadı.</p>';
+            } else {
+                mobileView.innerHTML = pageRecords.map(record => {
+                    const canEdit = App.canEditRecord(record);
+                    const canDelete = App.canDeleteRecord(record);
+                    const canComplete = App.canCompleteRecord(record);
+                    
+                    // Satır rengini belirle
+                    let borderColor = '';
+                    const durum = record.Durum || 'Bekliyor';
+                    
+                    if (durum === 'Tamamlandı' || durum === 'İptal') {
+                        borderColor = 'border-l-green-500';
+                    } else {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        
+                        if (record.Tarih) {
+                            const recordDate = new Date(record.Tarih);
+                            recordDate.setHours(0, 0, 0, 0);
+                            
+                            if (recordDate < today) {
+                                borderColor = 'border-l-red-500';
+                            } else {
+                                borderColor = 'border-l-yellow-500';
+                            }
+                        } else {
+                            borderColor = 'border-l-yellow-500';
+                        }
+                    }
+                    
+                    return `
+                        <div class="bg-white border-l-4 ${borderColor} rounded-lg shadow-sm p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="flex-1">
+                                    <p class="font-semibold text-gray-900 text-sm">${record.ID || ''}</p>
+                                    <p class="text-xs text-gray-500 mt-1">${this.formatSadeceTarih(record.Tarih)}</p>
+                                </div>
+                                <span class="status-badge status-${record.Durum?.toLowerCase() || 'bekliyor'}">${record.Durum || 'Bekliyor'}</span>
+                            </div>
+                            <div class="mt-3 space-y-1.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-gray-600 w-20">Kaynak:</span>
+                                    <span class="text-xs text-gray-900 flex-1">${record.Kaynak || ''}</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-gray-600 w-20">Hedef:</span>
+                                    <span class="text-xs text-gray-900 flex-1">${record.Hedef || ''}</span>
+                                </div>
+                                ${record['Hedef Bölge'] ? `
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-gray-600 w-20">Bölge:</span>
+                                    <span class="text-xs text-gray-900 flex-1">${record['Hedef Bölge']}</span>
+                                </div>
+                                ` : ''}
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-gray-600 w-20">Dağıtımcı:</span>
+                                    <span class="text-xs text-gray-900 flex-1">${record.Dağıtımcı || 'Atanmamış'}</span>
+                                </div>
+                                ${record['Kaydı Giren'] ? `
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-medium text-gray-600 w-20">Kaydı Giren:</span>
+                                    <span class="text-xs text-gray-900 flex-1">${record['Kaydı Giren']}</span>
+                                </div>
+                                ` : ''}
+                                ${record.Açıklama ? `
+                                <div class="mt-2 pt-2 border-t border-gray-200">
+                                    <p class="text-xs text-gray-600">${record.Açıklama}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="mt-3 pt-3 border-t border-gray-200 flex gap-2 flex-wrap">
+                                ${canComplete && record.Durum !== 'Tamamlandı' && record.Durum !== 'İptal' ? 
+                                    `<button onclick="App.completeRecord(${record.rowIndex})" class="px-3 py-1.5 bg-green-100 text-green-700 border border-green-300 rounded hover:bg-green-200 transition-colors text-xs font-medium flex-1 min-w-[80px]">Tamamla</button>` : ''}
+                                ${canEdit ? 
+                                    `<button onclick="App.editRecord(${record.rowIndex})" class="px-3 py-1.5 bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200 transition-colors text-xs font-medium flex-1 min-w-[80px]">Düzenle</button>` : ''}
+                                ${canDelete ? 
+                                    `<button onclick="App.deleteRecord(${record.rowIndex})" class="px-3 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200 transition-colors text-xs font-medium flex-1 min-w-[80px]">Sil</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
         this.renderPagination();
     },
     
@@ -393,34 +483,34 @@ const UI = {
         const pagination = document.getElementById('pagination');
         
         if (totalPages <= 1) {
-            pagination.innerHTML = '';
+            pagination.innerHTML = `<div class="text-xs sm:text-sm text-gray-600 text-center w-full">Toplam ${this.allRecords.length} kayıt</div>`;
             return;
         }
         
-        let html = '<div class="flex gap-2 items-center">';
+        let html = '<div class="flex flex-wrap gap-2 items-center justify-center w-full sm:w-auto">';
         
         // Previous button
         html += `<button onclick="UI.renderTablePage(${this.currentPage - 1})" 
-                 class="pagination-btn" 
+                 class="pagination-btn text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2" 
                  ${this.currentPage === 1 ? 'disabled' : ''}>Önceki</button>`;
         
-        // Page numbers
+        // Page numbers - mobilde daha az göster
         for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= this.currentPage - 2 && i <= this.currentPage + 2)) {
+            if (i === 1 || i === totalPages || (i >= this.currentPage - 1 && i <= this.currentPage + 1)) {
                 html += `<button onclick="UI.renderTablePage(${i})" 
-                         class="pagination-btn ${i === this.currentPage ? 'active' : ''}">${i}</button>`;
-            } else if (i === this.currentPage - 3 || i === this.currentPage + 3) {
-                html += '<span class="px-2">...</span>';
+                         class="pagination-btn text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 ${i === this.currentPage ? 'active' : ''}">${i}</button>`;
+            } else if (i === this.currentPage - 2 || i === this.currentPage + 2) {
+                html += '<span class="px-1 sm:px-2 text-xs sm:text-sm">...</span>';
             }
         }
         
         // Next button
         html += `<button onclick="UI.renderTablePage(${this.currentPage + 1})" 
-                 class="pagination-btn" 
+                 class="pagination-btn text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2" 
                  ${this.currentPage === totalPages ? 'disabled' : ''}>Sonraki</button>`;
         
         html += '</div>';
-        html += `<div class="text-sm text-gray-600">Toplam ${this.allRecords.length} kayıt</div>`;
+        html += `<div class="text-xs sm:text-sm text-gray-600 text-center sm:text-left w-full sm:w-auto">Toplam ${this.allRecords.length} kayıt</div>`;
         
         pagination.innerHTML = html;
     },

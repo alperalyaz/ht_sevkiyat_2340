@@ -308,15 +308,22 @@ const UI = {
     
     // Render table page
     renderTablePage(page) {
-        this.currentPage = page;
-        const start = (page - 1) * this.recordsPerPage;
-        const end = start + this.recordsPerPage;
-        const pageRecords = this.allRecords.slice(start, end);
-        
-        const tbody = document.getElementById('recordsTableBody');
+        try {
+            this.currentPage = page;
+            const start = (page - 1) * this.recordsPerPage;
+            const end = start + this.recordsPerPage;
+            const pageRecords = this.allRecords.slice(start, end);
+            
+            const tbody = document.getElementById('recordsTableBody');
+            const mobileView = document.getElementById('mobileRecordsView');
         
         if (pageRecords.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Kayıt bulunamadı.</td></tr>';
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-gray-500">Kayıt bulunamadı.</td></tr>';
+            }
+            if (mobileView) {
+                mobileView.innerHTML = '<p class="text-center text-gray-500">Kayıt bulunamadı.</p>';
+            }
             this.renderPagination();
             return;
         }
@@ -383,10 +390,10 @@ const UI = {
                     </td>
                 </tr>
             `;
-        }).join('');
+            }).join('');
+        }
         
         // Mobile card view
-        const mobileView = document.getElementById('mobileRecordsView');
         if (mobileView) {
             if (pageRecords.length === 0) {
                 mobileView.innerHTML = '<p class="text-center text-gray-500">Kayıt bulunamadı.</p>';
@@ -475,6 +482,17 @@ const UI = {
         }
         
         this.renderPagination();
+        } catch (error) {
+            console.error('renderTablePage hatası:', error);
+            const mobileView = document.getElementById('mobileRecordsView');
+            if (mobileView) {
+                mobileView.innerHTML = '<p class="text-center text-red-500">Kayıtlar gösterilirken bir hata oluştu.</p>';
+            }
+            const tbody = document.getElementById('recordsTableBody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">Kayıtlar gösterilirken bir hata oluştu.</td></tr>';
+            }
+        }
     },
     
     // Render pagination

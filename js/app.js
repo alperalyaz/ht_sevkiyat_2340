@@ -40,6 +40,7 @@ const App = {
             }
             
             UI.showLoading('recordsTableBody');
+            UI.showLoading('mobileRecordsView');
             UI.showLoading('todayShipments');
             UI.showLoading('overdueShipments');
             
@@ -121,6 +122,10 @@ const App = {
             const tbody = document.getElementById('recordsTableBody');
             if (tbody) {
                 tbody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">Veri yüklenemedi. Lütfen CONFIG ayarlarını kontrol edin.</td></tr>';
+            }
+            const mobileView = document.getElementById('mobileRecordsView');
+            if (mobileView) {
+                mobileView.innerHTML = '<p class="text-center text-red-500">Veri yüklenemedi. Lütfen CONFIG ayarlarını kontrol edin.</p>';
             }
         }
     },

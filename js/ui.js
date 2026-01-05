@@ -501,11 +501,17 @@ const UI = {
         
         let printHTML = `
             <div id="printArea" style="font-family: Arial, sans-serif;">
-                <div class="print-header">
-                    <h1>Hidroteknik Sevkiyat Takip Sistemi</h1>
-                    <p>Bekleyen Sevkiyatlar Listesi</p>
-                    <p style="font-size: 10px; color: #666;">Yazdırma Tarihi: ${printDate}</p>
-                    <p style="font-size: 10px; color: #666;">Toplam Kayıt: ${pendingRecords.length}</p>
+                <div class="print-header" style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid #ddd; padding-bottom: 15px;">
+                    <img src="https://files.cdn-files-a.com/uploads/5644137/400_6865986816fbc.png" alt="Hidroteknik Logo" style="max-width: 150px; height: auto; margin-bottom: 10px;">
+                    <h1 style="font-size: 18px; margin: 10px 0 5px 0; font-weight: bold;">Hidroteknik Sevkiyat Takip Sistemi</h1>
+                    <p style="font-size: 14px; margin: 5px 0; font-weight: 600;">Bekleyen Sevkiyatlar Listesi</p>
+                    <p style="font-size: 10px; color: #666; margin: 5px 0;">Yazdırma Tarihi: ${printDate}</p>
+                    <p style="font-size: 10px; color: #666; margin: 5px 0;">Toplam Kayıt: ${pendingRecords.length}</p>
+                </div>
+                <div style="background-color: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; padding: 12px; margin-bottom: 20px; text-align: center;">
+                    <p style="font-size: 11px; font-weight: bold; color: #856404; margin: 0; line-height: 1.5;">
+                        ⚠️ UYARI: Bu evrak gizli bilgiler içermektedir. Kullanımdan sonra imha ediniz. Üçüncü kişilere gösterilmemesi ve paylaşılmaması gerekmektedir.
+                    </p>
                 </div>
                 <table class="print-table" style="width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 10px;">
                     <thead>
@@ -557,6 +563,10 @@ const UI = {
         printHTML += `
                     </tbody>
                 </table>
+                <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center;">
+                    <p style="font-size: 9px; color: #666; margin: 5px 0;">Bu belge Hidroteknik Sevkiyat Takip Sistemi tarafından otomatik olarak oluşturulmuştur.</p>
+                    <p style="font-size: 9px; color: #666; margin: 5px 0;">Gizlilik uyarısı: Bu evrak gizli bilgiler içermektedir. Kullanımdan sonra imha ediniz.</p>
+                </div>
             </div>
         `;
         

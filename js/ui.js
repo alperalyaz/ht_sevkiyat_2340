@@ -370,14 +370,14 @@ const UI = {
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="status-badge status-${record.Durum?.toLowerCase() || 'bekliyor'}">${record.Durum || 'Bekliyor'}</span>
                     </td>
-                    <td class="px-3 py-4 text-sm font-medium" style="min-width: 120px; width: 120px;">
-                        <div class="flex flex-col gap-1.5">
-                            ${record.Durum !== 'Tamamlandı' && record.Durum !== 'İptal' ? 
-                                `<button onclick="App.completeRecord(${record.rowIndex})" ${!canComplete ? 'disabled' : ''} class="px-3 py-1.5 bg-green-100 text-green-700 border border-green-300 rounded hover:bg-green-200 transition-colors text-xs font-medium w-full whitespace-nowrap ${!canComplete ? 'opacity-50 cursor-not-allowed' : ''}">Tamamla</button>` : ''}
-                            <div class="flex gap-1">
-                                <button onclick="App.editRecord(${record.rowIndex})" ${!canEdit ? 'disabled' : ''} class="px-2 py-1.5 bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200 transition-colors text-xs font-medium flex-1 whitespace-nowrap ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}">Düzenle</button>
-                                <button onclick="App.deleteRecord(${record.rowIndex})" ${!canDelete ? 'disabled' : ''} class="px-2 py-1.5 bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200 transition-colors text-xs font-medium flex-1 whitespace-nowrap ${!canDelete ? 'opacity-50 cursor-not-allowed' : ''}">Sil</button>
-                            </div>
+                    <td class="px-2 py-4 whitespace-nowrap text-sm font-medium">
+                        <div class="flex gap-1 flex-wrap">
+                            ${canComplete && record.Durum !== 'Tamamlandı' && record.Durum !== 'İptal' ? 
+                                `<button onclick="App.completeRecord(${record.rowIndex})" class="px-4 py-0.5 bg-green-100 text-green-700 border border-green-300 rounded hover:bg-green-200 transition-colors text-xs font-medium">Tamamla</button>` : ''}
+                            ${canEdit ? 
+                                `<button onclick="App.editRecord(${record.rowIndex})" class="px-2 py-0.5 bg-blue-100 text-blue-700 border border-blue-300 rounded hover:bg-blue-200 transition-colors text-xs font-medium">Düzenle</button>` : ''}
+                            ${canDelete ? 
+                                `<button onclick="App.deleteRecord(${record.rowIndex})" class="px-2 py-0.5 bg-red-100 text-red-700 border border-red-300 rounded hover:bg-red-200 transition-colors text-xs font-medium">Sil</button>` : ''}
                         </div>
                     </td>
                 </tr>

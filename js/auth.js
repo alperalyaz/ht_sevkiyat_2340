@@ -154,14 +154,33 @@ const Auth = {
     },
     
     // Load user from localStorage
-    loadUser() {
+    async loadUser() {
         const savedUser = localStorage.getItem('currentUser');
         const savedEmail = localStorage.getItem('currentUserEmail');
         const savedUserName = localStorage.getItem('currentUserName');
         if (savedUser && savedEmail) {
             this.currentUser = savedUser;
             this.currentUserEmail = savedEmail;
-            this.currentUserName = savedUserName || savedUser; // Varsayılan olarak kısa adı kullan
+            
+            // Eğer savedUserName yoksa veya email kısa adıysa, personel listesinden ismi al
+            if (!savedUserName || savedUserName === savedUser) {
+                try {
+                    const personel = await SheetsAPI.getPersonel();
+                    const person = personel.find(p => p.Mail && p.Mail.toLowerCase() === savedEmail.toLowerCase());
+                    if (person && person.İsim) {
+                        this.currentUserName = person.İsim;
+                        localStorage.setItem('currentUserName', person.İsim);
+                    } else {
+                        this.currentUserName = savedUser; // Varsayılan olarak kısa adı kullan
+                    }
+                } catch (e) {
+                    console.error('Personel listesi alınamadı:', e);
+                    this.currentUserName = savedUserName || savedUser; // Varsayılan olarak kısa adı kullan
+                }
+            } else {
+                this.currentUserName = savedUserName;
+            }
+            
             this.showDashboard();
         } else {
             this.showLogin();

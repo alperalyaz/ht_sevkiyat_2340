@@ -45,11 +45,20 @@ const App = {
             
             this.records = await SheetsAPI.getSevkiyatlar();
             
-            // Sort by date (newest first)
+            // Sort by date (newest first), then by ID (newest first) for same dates
             this.records.sort((a, b) => {
                 const dateA = new Date(a.Tarih || 0);
                 const dateB = new Date(b.Tarih || 0);
-                return dateB - dateA;
+                const dateDiff = dateB - dateA;
+                
+                // If dates are the same, sort by ID (newest first - descending)
+                if (dateDiff === 0) {
+                    const idA = a.ID || '';
+                    const idB = b.ID || '';
+                    return idB.localeCompare(idA);
+                }
+                
+                return dateDiff;
             });
             
             // Render UI

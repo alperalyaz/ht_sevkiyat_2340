@@ -148,7 +148,39 @@ const UI = {
         const gun = now.getDate().toString().padStart(2, '0');
         const today = `${yil}-${ay}-${gun}`;
         
-        const todayRecords = records.filter(r => r.Tarih === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal');
+        // Helper function to normalize date
+        const normalizeDate = (dateValue) => {
+            if (!dateValue) return null;
+            
+            // If it's already in YYYY-MM-DD format
+            if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+                return dateValue;
+            }
+            
+            // Try to parse as Date
+            try {
+                const date = new Date(dateValue);
+                if (!isNaN(date.getTime())) {
+                    const year = date.getFullYear();
+                    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                    const day = date.getDate().toString().padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+            } catch (e) {
+                // If parsing fails, try to extract date from string
+                const dateMatch = String(dateValue).match(/(\d{4})-(\d{2})-(\d{2})/);
+                if (dateMatch) {
+                    return `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`;
+                }
+            }
+            
+            return null;
+        };
+        
+        const todayRecords = records.filter(r => {
+            const normalizedDate = normalizeDate(r.Tarih);
+            return normalizedDate === today && r.Durum !== 'Tamamlandı' && r.Durum !== 'İptal';
+        });
         
         if (todayRecords.length === 0) {
             container.innerHTML = '<p class="text-gray-500">Bugün için sevkiyat bulunmamaktadır.</p>';

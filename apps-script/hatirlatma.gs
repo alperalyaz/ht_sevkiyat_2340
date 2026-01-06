@@ -19,7 +19,7 @@ const SEVKIYATLAR_SHEET = 'Sevkiyatlar';
 const PERSONEL_SHEET = 'Personel';
 
 // App URL (mail içinde kullanılacak)
-const APP_URL = 'https://alperalyaz.github.io/ht_sevkiyat_2340';
+const APP_URL = 'https://sevkiyat.hidroteknik.com.tr';
 
 /**
  * Ana fonksiyon: Günlük hatırlatma maillerini gönder
@@ -28,15 +28,45 @@ function sendDailyReminders() {
   try {
     Logger.log('Script başlatıldı. Sheet ID: ' + SHEET_ID);
     
-    // Sheet'i aç
+    // Sheet ID'nin geçerli olup olmadığını kontrol et
+    if (!SHEET_ID || SHEET_ID.trim() === '') {
+      Logger.log('HATA: Sheet ID tanımlı değil veya boş!');
+      return;
+    }
+    
+    // Sheet'i aç - daha güvenli yaklaşım
     let spreadsheet;
     try {
+      Logger.log('SpreadsheetApp servisi kontrol ediliyor...');
+      // SpreadsheetApp'in mevcut olup olmadığını test et
+      if (typeof SpreadsheetApp === 'undefined') {
+        throw new Error('SpreadsheetApp servisi bulunamadı');
+      }
+      
+      Logger.log('Sheet açılmaya çalışılıyor... Sheet ID: ' + SHEET_ID);
+      
+      // Sheet'i açmayı dene
       spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      
+      if (!spreadsheet) {
+        throw new Error('Sheet açıldı ancak null döndü');
+      }
+      
       Logger.log('Sheet başarıyla açıldı: ' + spreadsheet.getName());
     } catch (error) {
-      Logger.log('HATA: Sheet açılamadı! Hata: ' + error.toString());
-      Logger.log('Sheet ID kontrol edin: ' + SHEET_ID);
-      Logger.log('Sheet\'e erişim yetkiniz olduğundan emin olun.');
+      Logger.log('HATA: Sheet açılamadı!');
+      Logger.log('Hata tipi: ' + (typeof error));
+      Logger.log('Hata detayı: ' + error.toString());
+      Logger.log('Hata mesajı: ' + (error.message || 'Yok'));
+      Logger.log('Hata stack: ' + (error.stack || 'Yok'));
+      Logger.log('Sheet ID: ' + SHEET_ID);
+      Logger.log('');
+      Logger.log('ÇÖZÜM ADIMLARI:');
+      Logger.log('1. Script\'i ilk kez çalıştırıyorsanız, yetkilendirme isteğini onaylayın');
+      Logger.log('2. Sheet ID\'nin doğru olduğundan emin olun (Sheet URL\'sinden kontrol edin)');
+      Logger.log('3. Script\'in bu Sheet\'e erişim yetkisi olduğundan emin olun');
+      Logger.log('4. Sheet\'in silinmediğinden veya paylaşım izinlerinin değişmediğinden emin olun');
+      Logger.log('5. Script\'i tekrar çalıştırmayı deneyin');
       return;
     }
     
@@ -180,6 +210,8 @@ function sendDailyReminders() {
       // Tüm aktif personellere (yöneticilere) bildirim gönder
       const atanmamisSevkiyatlar = sevkiyatlarByDagitimci['Atanmamış'];
       
+      let mailGonderildi = false;
+      
       for (const personel of personelList) {
         if (personel['Mail']) {
           const email = personel['Mail'];
@@ -221,11 +253,18 @@ function sendDailyReminders() {
             });
             
             Logger.log(`✓ Atanmamış sevkiyat bildirimi gönderildi: ${email}`);
+            mailGonderildi = true;
           } catch (error) {
             Logger.log(`✗ Atanmamış sevkiyat bildirimi gönderilemedi (${email}): ${error.toString()}`);
           }
         }
       }
+      
+      if (!mailGonderildi) {
+        Logger.log(`UYARI: Atanmamış sevkiyatlar var (${atanmamisSevkiyatlar.length} adet) ancak hiçbir personelin mail adresi bulunamadı veya mail gönderilemedi!`);
+      }
+    } else {
+      Logger.log('Atanmamış sevkiyat bulunamadı.');
     }
     
   } catch (error) {
@@ -279,13 +318,30 @@ function sendDailyReport() {
   try {
     Logger.log('Günlük rapor oluşturuluyor...');
     
+    // SpreadsheetApp servisinin mevcut olup olmadığını kontrol et
+    if (typeof SpreadsheetApp === 'undefined') {
+      Logger.log('HATA: SpreadsheetApp servisi bulunamadı!');
+      return;
+    }
+    
+    // Sheet ID'nin geçerli olup olmadığını kontrol et
+    if (!SHEET_ID || SHEET_ID.trim() === '') {
+      Logger.log('HATA: Sheet ID tanımlı değil veya boş!');
+      return;
+    }
+    
     // Sheet'i aç
     let spreadsheet;
     try {
+      Logger.log('Sheet açılmaya çalışılıyor...');
       spreadsheet = SpreadsheetApp.openById(SHEET_ID);
       Logger.log('Sheet başarıyla açıldı: ' + spreadsheet.getName());
     } catch (error) {
-      Logger.log('HATA: Sheet açılamadı! Hata: ' + error.toString());
+      Logger.log('HATA: Sheet açılamadı!');
+      Logger.log('Hata detayı: ' + error.toString());
+      Logger.log('Hata mesajı: ' + error.message);
+      Logger.log('Hata stack: ' + (error.stack || 'Yok'));
+      Logger.log('Sheet ID: ' + SHEET_ID);
       return;
     }
     

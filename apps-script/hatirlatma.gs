@@ -38,21 +38,36 @@ function sendDailyReminders() {
     let spreadsheet;
     try {
       Logger.log('SpreadsheetApp servisi kontrol ediliyor...');
+      
       // SpreadsheetApp'in mevcut olup olmadığını test et
       if (typeof SpreadsheetApp === 'undefined') {
         throw new Error('SpreadsheetApp servisi bulunamadı');
       }
       
+      Logger.log('SpreadsheetApp servisi mevcut.');
       Logger.log('Sheet açılmaya çalışılıyor... Sheet ID: ' + SHEET_ID);
       
-      // Sheet'i açmayı dene
-      spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      // Kısa bir bekleme ekle (servislerin yüklenmesi için)
+      Utilities.sleep(100);
+      
+      // Sheet'i açmayı dene - farklı yöntemlerle
+      try {
+        spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      } catch (openError) {
+        // İlk deneme başarısız olursa, tekrar dene
+        Logger.log('İlk deneme başarısız, tekrar deneniyor...');
+        Utilities.sleep(200);
+        spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      }
       
       if (!spreadsheet) {
         throw new Error('Sheet açıldı ancak null döndü');
       }
       
-      Logger.log('Sheet başarıyla açıldı: ' + spreadsheet.getName());
+      // Sheet'in adını alarak doğrulama yap
+      const sheetName = spreadsheet.getName();
+      Logger.log('Sheet başarıyla açıldı: ' + sheetName);
+      
     } catch (error) {
       Logger.log('HATA: Sheet açılamadı!');
       Logger.log('Hata tipi: ' + (typeof error));
@@ -63,10 +78,18 @@ function sendDailyReminders() {
       Logger.log('');
       Logger.log('ÇÖZÜM ADIMLARI:');
       Logger.log('1. Script\'i ilk kez çalıştırıyorsanız, yetkilendirme isteğini onaylayın');
+      Logger.log('   - Run butonuna bastığınızda "Review permissions" (İzinleri İncele) çıkacak');
+      Logger.log('   - Google hesabınızı seçin');
+      Logger.log('   - "Advanced" (Gelişmiş) linkine tıklayın');
+      Logger.log('   - "[Proje adı] (unsafe)" linkine tıklayın');
+      Logger.log('   - Tüm izinleri onaylayın');
       Logger.log('2. Sheet ID\'nin doğru olduğundan emin olun (Sheet URL\'sinden kontrol edin)');
       Logger.log('3. Script\'in bu Sheet\'e erişim yetkisi olduğundan emin olun');
       Logger.log('4. Sheet\'in silinmediğinden veya paylaşım izinlerinin değişmediğinden emin olun');
       Logger.log('5. Script\'i tekrar çalıştırmayı deneyin');
+      Logger.log('');
+      Logger.log('ÖNEMLİ: Bu hata genellikle yetkilendirme sorunundan kaynaklanır.');
+      Logger.log('Script\'i manuel olarak çalıştırıp yetkilendirme isteğini onaylamanız gerekiyor.');
       return;
     }
     
@@ -121,6 +144,14 @@ function sendDailyReminders() {
     const sevkiyatHeaders = sevkiyatData[0];
     const sevkiyatlar = [];
     
+    Logger.log('Toplam sevkiyat satır sayısı (başlık hariç): ' + (sevkiyatData.length - 1));
+    
+    let tarihYokSayisi = 0;
+    let durumYokSayisi = 0;
+    let tarihBugunDegilSayisi = 0;
+    let durumUygunDegilSayisi = 0;
+    let bugunVeBekliyorSayisi = 0;
+    
     for (let i = 1; i < sevkiyatData.length; i++) {
       const row = sevkiyatData[i];
       const sevkiyat = {};
@@ -128,23 +159,81 @@ function sendDailyReminders() {
         sevkiyat[header] = row[index];
       });
       
+      // ID varsa logla (debug için)
+      const sevkiyatID = sevkiyat['ID'] || sevkiyat['id'] || '';
+      
       // Bugünün tarihine sahip ve durumu "Bekliyor" veya "Yolda" olanları filtrele
-      if (sevkiyat['Tarih'] && sevkiyat['Durum']) {
-        const sevkiyatTarih = new Date(sevkiyat['Tarih']);
-        // Türkiye saatine çevir (UTC+3)
-        const sevkiyatTarihTurkiye = new Date(sevkiyatTarih.getTime() + (3 * 60 * 60 * 1000));
-        sevkiyatTarihTurkiye.setUTCHours(0, 0, 0, 0);
-        const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      if (!sevkiyat['Tarih']) {
+        tarihYokSayisi++;
+        Logger.log(`Sevkiyat atlandı (Tarih yok): ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''}`);
+        continue;
+      }
+      
+      if (!sevkiyat['Durum']) {
+        durumYokSayisi++;
+        Logger.log(`Sevkiyat atlandı (Durum yok): ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''}`);
+        continue;
+      }
+      
+      const sevkiyatTarih = new Date(sevkiyat['Tarih']);
+      // Türkiye saatine çevir (UTC+3)
+      const sevkiyatTarihTurkiye = new Date(sevkiyatTarih.getTime() + (3 * 60 * 60 * 1000));
+      sevkiyatTarihTurkiye.setUTCHours(0, 0, 0, 0);
+      const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      
+      // Durum kontrolü - önce durumu kontrol et
+      if (sevkiyat['Durum'] !== 'Bekliyor' && sevkiyat['Durum'] !== 'Yolda') {
+        durumUygunDegilSayisi++;
+        Logger.log(`Sevkiyat atlandı (Durum uygun değil: ${sevkiyat['Durum']}): ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Tarih: ${sevkiyatTarihStr})`);
+        continue;
+      }
+      
+      // Dağıtımcı kontrolü - atanmamış sevkiyatlar için tarih kontrolü yapma
+      const dagitimci = sevkiyat['Dağıtımcı'] || '';
+      const isAtanmamis = !dagitimci || dagitimci.toString().trim() === '' || dagitimci.toString().trim() === 'Atanmamış';
+      
+      // Atanmamış sevkiyatlar: Bugün veya geçmiş tarihli olanları dahil et (gelecek tarihli olanları hariç tut)
+      // Atanmış sevkiyatlar: Sadece bugünün tarihine sahip olanları dahil et
+      if (isAtanmamis) {
+        // Atanmamış sevkiyatlar için: Bugün veya geçmiş tarihli olanları dahil et
+        const sevkiyatTarihTime = sevkiyatTarihTurkiye.getTime();
+        const todayTime = turkiyeSaati.getTime();
         
-        if (sevkiyatTarihStr === todayStr && 
-            (sevkiyat['Durum'] === 'Bekliyor' || sevkiyat['Durum'] === 'Yolda')) {
-          sevkiyatlar.push(sevkiyat);
-          Logger.log('Bugünkü sevkiyat bulundu: ' + (sevkiyat['Kaynak'] || '') + ' → ' + (sevkiyat['Hedef'] || '') + ' (Dağıtımcı: ' + (sevkiyat['Dağıtımcı'] || 'Atanmamış') + ')');
+        if (sevkiyatTarihTime > todayTime) {
+          // Gelecek tarihli atanmamış sevkiyatları atla
+          tarihBugunDegilSayisi++;
+          Logger.log(`Sevkiyat atlandı (Gelecek tarihli atanmamış: ${sevkiyatTarihStr}): ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Durum: ${sevkiyat['Durum']})`);
+          continue;
         }
+        
+        // Bugün veya geçmiş tarihli atanmamış sevkiyat - dahil et
+        bugunVeBekliyorSayisi++;
+        sevkiyatlar.push(sevkiyat);
+        Logger.log(`✓ Atanmamış sevkiyat bulundu: ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Tarih: ${sevkiyatTarihStr}, Durum: ${sevkiyat['Durum']})`);
+      } else {
+        // Atanmış sevkiyatlar için: Sadece bugünün tarihine sahip olanları dahil et
+        if (sevkiyatTarihStr !== todayStr) {
+          tarihBugunDegilSayisi++;
+          Logger.log(`Sevkiyat atlandı (Tarih bugün değil: ${sevkiyatTarihStr}): ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Dağıtımcı: ${dagitimci}, Durum: ${sevkiyat['Durum']})`);
+          continue;
+        }
+        
+        // Bugünkü atanmış sevkiyat - dahil et
+        bugunVeBekliyorSayisi++;
+        sevkiyatlar.push(sevkiyat);
+        Logger.log(`✓ Bugünkü sevkiyat bulundu: ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Dağıtımcı: ${dagitimci}, Durum: ${sevkiyat['Durum']})`);
       }
     }
     
+    Logger.log('\n=== SEVKİYAT FİLTRELEME ÖZETİ ===');
+    Logger.log('Toplam sevkiyat satırı: ' + (sevkiyatData.length - 1));
+    Logger.log('Tarih yok: ' + tarihYokSayisi);
+    Logger.log('Durum yok: ' + durumYokSayisi);
+    Logger.log('Tarih bugün değil: ' + tarihBugunDegilSayisi);
+    Logger.log('Durum uygun değil (Bekliyor/Yolda değil): ' + durumUygunDegilSayisi);
+    Logger.log('Bugün ve Bekliyor/Yolda: ' + bugunVeBekliyorSayisi);
     Logger.log('Toplam bugünkü sevkiyat sayısı: ' + sevkiyatlar.length);
+    Logger.log('================================\n');
     
     if (sevkiyatlar.length === 0) {
       Logger.log('UYARI: Bugün için sevkiyat bulunamadı! Mail gönderilmeyecek.');
@@ -156,17 +245,50 @@ function sendDailyReminders() {
     const sevkiyatlarByDagitimci = {};
     
     sevkiyatlar.forEach(sevkiyat => {
-      const dagitimci = sevkiyat['Dağıtımcı'] || 'Atanmamış';
+      // Dağıtımcı boş, null, undefined veya boş string ise "Atanmamış" olarak işaretle
+      let dagitimci = sevkiyat['Dağıtımcı'];
+      if (!dagitimci || dagitimci.toString().trim() === '') {
+        dagitimci = 'Atanmamış';
+      } else {
+        dagitimci = dagitimci.toString().trim();
+      }
+      
       if (!sevkiyatlarByDagitimci[dagitimci]) {
         sevkiyatlarByDagitimci[dagitimci] = [];
       }
       sevkiyatlarByDagitimci[dagitimci].push(sevkiyat);
     });
     
-    // Her dağıtımcıya mail gönder
+    // Tüm dağıtımcı key'lerini logla (debug için)
+    Logger.log('Dağıtımcı key\'leri: ' + Object.keys(sevkiyatlarByDagitimci).join(', '));
     Logger.log('Dağıtımcılara göre gruplanmış sevkiyat sayısı: ' + Object.keys(sevkiyatlarByDagitimci).length);
     
+    // Atanmamış sevkiyatları önce kontrol et ve logla
+    const atanmamisKey = Object.keys(sevkiyatlarByDagitimci).find(key => 
+      key === 'Atanmamış' || 
+      key.toString().trim() === '' || 
+      !key || 
+      key.toString().trim().toLowerCase() === 'atanmamış'
+    );
+    
+    if (atanmamisKey) {
+      Logger.log(`Atanmamış sevkiyat key bulundu: "${atanmamisKey}" (${sevkiyatlarByDagitimci[atanmamisKey].length} adet)`);
+    } else {
+      Logger.log('Atanmamış sevkiyat key bulunamadı. Tüm key\'ler: ' + Object.keys(sevkiyatlarByDagitimci).join(', '));
+    }
+    
+    // Her dağıtımcıya mail gönder (Atanmamış hariç)
     for (const [dagitimci, sevkiyatList] of Object.entries(sevkiyatlarByDagitimci)) {
+      // Atanmamış sevkiyatları şimdilik atla, sonra ayrı işleyeceğiz
+      const isAtanmamis = !dagitimci || 
+                          dagitimci.toString().trim() === '' || 
+                          dagitimci.toString().trim() === 'Atanmamış' ||
+                          dagitimci.toString().trim().toLowerCase() === 'atanmamış';
+      
+      if (isAtanmamis) {
+        continue; // Atanmamış sevkiyatları sonra işleyeceğiz
+      }
+      
       Logger.log(`İşleniyor: ${dagitimci} (${sevkiyatList.length} sevkiyat)`);
       
       // Personel bilgisini bul
@@ -193,7 +315,7 @@ function sendDailyReminders() {
         } catch (error) {
           Logger.log(`✗ Mail gönderilemedi (${email}): ${error.toString()}`);
         }
-      } else if (dagitimci !== 'Atanmamış') {
+      } else {
         Logger.log(`✗ Personel bulunamadı veya mail adresi yok: ${dagitimci}`);
         if (personel) {
           Logger.log(`  Personel bulundu ama mail adresi yok. Mail sütunu: ${personel['Mail']}`);
@@ -204,16 +326,23 @@ function sendDailyReminders() {
     }
     
     // Atanmamış sevkiyatlar için yöneticilere mail gönder
-    if (sevkiyatlarByDagitimci['Atanmamış'] && sevkiyatlarByDagitimci['Atanmamış'].length > 0) {
-      Logger.log(`${sevkiyatlarByDagitimci['Atanmamış'].length} adet atanmamış sevkiyat bulundu.`);
-      
-      // Tüm aktif personellere (yöneticilere) bildirim gönder
-      const atanmamisSevkiyatlar = sevkiyatlarByDagitimci['Atanmamış'];
+    const atanmamisKeyFinal = atanmamisKey || 'Atanmamış';
+    const atanmamisSevkiyatlar = sevkiyatlarByDagitimci[atanmamisKeyFinal] || 
+                                 sevkiyatlarByDagitimci['Atanmamış'] || 
+                                 [];
+    
+    if (atanmamisSevkiyatlar.length > 0) {
+      Logger.log(`\n=== ATANMAMIŞ SEVKİYAT İŞLEMİ ===`);
+      Logger.log(`${atanmamisSevkiyatlar.length} adet atanmamış sevkiyat bulundu.`);
+      Logger.log(`Toplam aktif personel sayısı: ${personelList.length}`);
+      Logger.log(`Mail adresi olan personel sayısı: ${personelList.filter(p => p['Mail']).length}`);
       
       let mailGonderildi = false;
+      let mailGonderilmeyeCalisilanSayisi = 0;
       
       for (const personel of personelList) {
         if (personel['Mail']) {
+          mailGonderilmeyeCalisilanSayisi++;
           const email = personel['Mail'];
           const isim = personel['İsim'];
           
@@ -222,10 +351,25 @@ function sendDailyReminders() {
           // Mail içeriğini oluştur
           const subject = 'Hidroteknik - Atanmamış Sevkiyat Bildirimi';
           let body = `Merhaba ${isim},\n\n`;
-          body += `Bugün için ${atanmamisSevkiyatlar.length} adet dağıtımcı atanmamış sevkiyat bulunmaktadır:\n\n`;
+          body += `${atanmamisSevkiyatlar.length} adet dağıtımcı atanmamış sevkiyat bulunmaktadır:\n\n`;
           
           atanmamisSevkiyatlar.forEach((sevkiyat, index) => {
-            body += `${index + 1}. ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (${sevkiyat['Hedef Bölge'] || ''})\n`;
+            // Tarih bilgisini formatla
+            let tarihBilgisi = '';
+            if (sevkiyat['Tarih']) {
+              const sevkiyatTarih = new Date(sevkiyat['Tarih']);
+              const sevkiyatTarihTurkiye = new Date(sevkiyatTarih.getTime() + (3 * 60 * 60 * 1000));
+              const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+              const todayStr = Utilities.formatDate(turkiyeSaati, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+              
+              if (sevkiyatTarihStr === todayStr) {
+                tarihBilgisi = ' (Bugün)';
+              } else {
+                tarihBilgisi = ` (Tarih: ${sevkiyatTarihStr})`;
+              }
+            }
+            
+            body += `${index + 1}. ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (${sevkiyat['Hedef Bölge'] || ''})${tarihBilgisi}\n`;
             if (sevkiyat['Açıklama']) {
               body += `   Açıklama: ${sevkiyat['Açıklama']}\n`;
             }
@@ -256,12 +400,20 @@ function sendDailyReminders() {
             mailGonderildi = true;
           } catch (error) {
             Logger.log(`✗ Atanmamış sevkiyat bildirimi gönderilemedi (${email}): ${error.toString()}`);
+            Logger.log(`  Hata detayı: ${error.message || 'Bilinmeyen hata'}`);
           }
+        } else {
+          Logger.log(`Personel mail adresi yok: ${personel['İsim'] || 'İsimsiz'}`);
         }
       }
       
+      Logger.log(`\n=== ATANMAMIŞ SEVKİYAT İŞLEM SONUCU ===`);
+      Logger.log(`Mail gönderilmeye çalışılan personel sayısı: ${mailGonderilmeyeCalisilanSayisi}`);
+      Logger.log(`Başarıyla gönderilen mail sayısı: ${mailGonderildi ? mailGonderilmeyeCalisilanSayisi : 0}`);
+      
       if (!mailGonderildi) {
         Logger.log(`UYARI: Atanmamış sevkiyatlar var (${atanmamisSevkiyatlar.length} adet) ancak hiçbir personelin mail adresi bulunamadı veya mail gönderilemedi!`);
+        Logger.log(`Personel listesi kontrol edilmeli. Toplam personel: ${personelList.length}, Mail adresi olan: ${personelList.filter(p => p['Mail']).length}`);
       }
     } else {
       Logger.log('Atanmamış sevkiyat bulunamadı.');
@@ -304,9 +456,11 @@ function createEmailBody(isim, sevkiyatList) {
 }
 
 /**
- * Test fonksiyonu (manuel çalıştırma için)
+ * GERÇEK ÇALIŞTIRMA FONKSİYONU - Tüm kişilere mail gönderir
+ * DİKKAT: Bu fonksiyon gerçek mailler gönderir!
+ * Test için testSendDailyReminders() fonksiyonunu kullanın.
  */
-function testSendDailyReminders() {
+function runSendDailyReminders() {
   sendDailyReminders();
 }
 
@@ -318,30 +472,52 @@ function sendDailyReport() {
   try {
     Logger.log('Günlük rapor oluşturuluyor...');
     
-    // SpreadsheetApp servisinin mevcut olup olmadığını kontrol et
-    if (typeof SpreadsheetApp === 'undefined') {
-      Logger.log('HATA: SpreadsheetApp servisi bulunamadı!');
-      return;
-    }
-    
     // Sheet ID'nin geçerli olup olmadığını kontrol et
     if (!SHEET_ID || SHEET_ID.trim() === '') {
       Logger.log('HATA: Sheet ID tanımlı değil veya boş!');
       return;
     }
     
-    // Sheet'i aç
+    // Sheet'i aç - daha güvenli yaklaşım
     let spreadsheet;
     try {
-      Logger.log('Sheet açılmaya çalışılıyor...');
-      spreadsheet = SpreadsheetApp.openById(SHEET_ID);
-      Logger.log('Sheet başarıyla açıldı: ' + spreadsheet.getName());
+      Logger.log('SpreadsheetApp servisi kontrol ediliyor...');
+      if (typeof SpreadsheetApp === 'undefined') {
+        throw new Error('SpreadsheetApp servisi bulunamadı');
+      }
+      
+      Logger.log('SpreadsheetApp servisi mevcut.');
+      Logger.log('Sheet açılmaya çalışılıyor... Sheet ID: ' + SHEET_ID);
+      
+      // Kısa bir bekleme ekle (servislerin yüklenmesi için)
+      Utilities.sleep(100);
+      
+      // Sheet'i açmayı dene - farklı yöntemlerle
+      try {
+        spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      } catch (openError) {
+        // İlk deneme başarısız olursa, tekrar dene
+        Logger.log('İlk deneme başarısız, tekrar deneniyor...');
+        Utilities.sleep(200);
+        spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      }
+      
+      if (!spreadsheet) {
+        throw new Error('Sheet açıldı ancak null döndü');
+      }
+      
+      // Sheet'in adını alarak doğrulama yap
+      const sheetName = spreadsheet.getName();
+      Logger.log('Sheet başarıyla açıldı: ' + sheetName);
+      
     } catch (error) {
       Logger.log('HATA: Sheet açılamadı!');
       Logger.log('Hata detayı: ' + error.toString());
-      Logger.log('Hata mesajı: ' + error.message);
+      Logger.log('Hata mesajı: ' + (error.message || 'Yok'));
       Logger.log('Hata stack: ' + (error.stack || 'Yok'));
       Logger.log('Sheet ID: ' + SHEET_ID);
+      Logger.log('');
+      Logger.log('ÇÖZÜM: Script\'i manuel olarak çalıştırıp yetkilendirme isteğini onaylayın.');
       return;
     }
     
@@ -576,4 +752,243 @@ function createDailyReportBody(tarih, eklenenler, tamamlananlar, planlanmisTamam
  */
 function testSendDailyReport() {
   sendDailyReport();
+}
+
+/**
+ * TEST FONKSİYONU - Mail göndermez, sadece loglara yazar
+ * Bu fonksiyon test için kullanılır, gerçek kişilere mail göndermez
+ */
+function testSendDailyReminders() {
+  Logger.log('=== TEST MODU: Mail gönderilmeyecek, sadece loglara yazılacak ===\n');
+  
+  try {
+    Logger.log('Script başlatıldı (TEST MODU). Sheet ID: ' + SHEET_ID);
+    
+    // Sheet ID'nin geçerli olup olmadığını kontrol et
+    if (!SHEET_ID || SHEET_ID.trim() === '') {
+      Logger.log('HATA: Sheet ID tanımlı değil veya boş!');
+      return;
+    }
+    
+    // Sheet'i aç
+    let spreadsheet;
+    try {
+      Logger.log('SpreadsheetApp servisi kontrol ediliyor...');
+      if (typeof SpreadsheetApp === 'undefined') {
+        throw new Error('SpreadsheetApp servisi bulunamadı');
+      }
+      
+      Logger.log('SpreadsheetApp servisi mevcut.');
+      Logger.log('Sheet açılmaya çalışılıyor... Sheet ID: ' + SHEET_ID);
+      Utilities.sleep(100);
+      
+      try {
+        spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      } catch (openError) {
+        Logger.log('İlk deneme başarısız, tekrar deneniyor...');
+        Utilities.sleep(200);
+        spreadsheet = SpreadsheetApp.openById(SHEET_ID);
+      }
+      
+      if (!spreadsheet) {
+        throw new Error('Sheet açıldı ancak null döndü');
+      }
+      
+      const sheetName = spreadsheet.getName();
+      Logger.log('Sheet başarıyla açıldı: ' + sheetName);
+      
+    } catch (error) {
+      Logger.log('HATA: Sheet açılamadı!');
+      Logger.log('Hata detayı: ' + error.toString());
+      return;
+    }
+    
+    const sevkiyatlarSheet = spreadsheet.getSheetByName(SEVKIYATLAR_SHEET);
+    const personelSheet = spreadsheet.getSheetByName(PERSONEL_SHEET);
+    
+    if (!sevkiyatlarSheet || !personelSheet) {
+      Logger.log('HATA: Sheet\'ler bulunamadı!');
+      return;
+    }
+    
+    Logger.log('Sheet\'ler başarıyla açıldı');
+    
+    // Bugünün tarihi
+    const today = new Date();
+    const turkiyeSaati = new Date(today.getTime() + (3 * 60 * 60 * 1000));
+    turkiyeSaati.setUTCHours(0, 0, 0, 0);
+    const todayStr = Utilities.formatDate(turkiyeSaati, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    Logger.log('Bugünün tarihi (Türkiye saati): ' + todayStr);
+    
+    // Personel listesini al
+    const personelData = personelSheet.getDataRange().getValues();
+    const personelHeaders = personelData[0];
+    const personelList = [];
+    
+    for (let i = 1; i < personelData.length; i++) {
+      const row = personelData[i];
+      const person = {};
+      personelHeaders.forEach((header, index) => {
+        person[header] = row[index];
+      });
+      
+      if (person['Aktif'] === true || person['Aktif'] === 'TRUE') {
+        personelList.push(person);
+      }
+    }
+    
+    Logger.log('Toplam aktif personel sayısı: ' + personelList.length);
+    
+    // Sevkiyatları al
+    const sevkiyatData = sevkiyatlarSheet.getDataRange().getValues();
+    const sevkiyatHeaders = sevkiyatData[0];
+    const sevkiyatlar = [];
+    
+    Logger.log('Toplam sevkiyat satır sayısı (başlık hariç): ' + (sevkiyatData.length - 1));
+    
+    let tarihYokSayisi = 0;
+    let durumYokSayisi = 0;
+    let tarihBugunDegilSayisi = 0;
+    let durumUygunDegilSayisi = 0;
+    let bugunVeBekliyorSayisi = 0;
+    
+    for (let i = 1; i < sevkiyatData.length; i++) {
+      const row = sevkiyatData[i];
+      const sevkiyat = {};
+      sevkiyatHeaders.forEach((header, index) => {
+        sevkiyat[header] = row[index];
+      });
+      
+      const sevkiyatID = sevkiyat['ID'] || sevkiyat['id'] || '';
+      
+      if (!sevkiyat['Tarih']) {
+        tarihYokSayisi++;
+        continue;
+      }
+      
+      if (!sevkiyat['Durum']) {
+        durumYokSayisi++;
+        continue;
+      }
+      
+      const sevkiyatTarih = new Date(sevkiyat['Tarih']);
+      const sevkiyatTarihTurkiye = new Date(sevkiyatTarih.getTime() + (3 * 60 * 60 * 1000));
+      sevkiyatTarihTurkiye.setUTCHours(0, 0, 0, 0);
+      const sevkiyatTarihStr = Utilities.formatDate(sevkiyatTarihTurkiye, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+      
+      // Durum kontrolü - önce durumu kontrol et
+      if (sevkiyat['Durum'] !== 'Bekliyor' && sevkiyat['Durum'] !== 'Yolda') {
+        durumUygunDegilSayisi++;
+        continue;
+      }
+      
+      // Dağıtımcı kontrolü - atanmamış sevkiyatlar için tarih kontrolü yapma
+      const dagitimci = sevkiyat['Dağıtımcı'] || '';
+      const isAtanmamis = !dagitimci || dagitimci.toString().trim() === '' || dagitimci.toString().trim() === 'Atanmamış';
+      
+      // Atanmamış sevkiyatlar: Bugün veya geçmiş tarihli olanları dahil et (gelecek tarihli olanları hariç tut)
+      // Atanmış sevkiyatlar: Sadece bugünün tarihine sahip olanları dahil et
+      if (isAtanmamis) {
+        // Atanmamış sevkiyatlar için: Bugün veya geçmiş tarihli olanları dahil et
+        const sevkiyatTarihTime = sevkiyatTarihTurkiye.getTime();
+        const todayTime = turkiyeSaati.getTime();
+        
+        if (sevkiyatTarihTime > todayTime) {
+          // Gelecek tarihli atanmamış sevkiyatları atla
+          tarihBugunDegilSayisi++;
+          continue;
+        }
+        
+        // Bugün veya geçmiş tarihli atanmamış sevkiyat - dahil et
+        bugunVeBekliyorSayisi++;
+        sevkiyatlar.push(sevkiyat);
+        Logger.log(`✓ Atanmamış sevkiyat bulundu: ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Tarih: ${sevkiyatTarihStr}, Durum: ${sevkiyat['Durum']})`);
+      } else {
+        // Atanmış sevkiyatlar için: Sadece bugünün tarihine sahip olanları dahil et
+        if (sevkiyatTarihStr !== todayStr) {
+          tarihBugunDegilSayisi++;
+          continue;
+        }
+        
+        // Bugünkü atanmış sevkiyat - dahil et
+        bugunVeBekliyorSayisi++;
+        sevkiyatlar.push(sevkiyat);
+        Logger.log(`✓ Bugünkü sevkiyat bulundu: ${sevkiyatID} - ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (Dağıtımcı: ${dagitimci}, Durum: ${sevkiyat['Durum']})`);
+      }
+    }
+    
+    Logger.log('\n=== SEVKİYAT FİLTRELEME ÖZETİ ===');
+    Logger.log('Toplam sevkiyat satırı: ' + (sevkiyatData.length - 1));
+    Logger.log('Tarih yok: ' + tarihYokSayisi);
+    Logger.log('Durum yok: ' + durumYokSayisi);
+    Logger.log('Tarih bugün değil: ' + tarihBugunDegilSayisi);
+    Logger.log('Durum uygun değil (Bekliyor/Yolda değil): ' + durumUygunDegilSayisi);
+    Logger.log('Bugün ve Bekliyor/Yolda: ' + bugunVeBekliyorSayisi);
+    Logger.log('Toplam bugünkü sevkiyat sayısı: ' + sevkiyatlar.length);
+    Logger.log('================================\n');
+    
+    if (sevkiyatlar.length === 0) {
+      Logger.log('UYARI: Bugün için sevkiyat bulunamadı!');
+      return;
+    }
+    
+    // Dağıtımcılara göre grupla
+    const sevkiyatlarByDagitimci = {};
+    
+    sevkiyatlar.forEach(sevkiyat => {
+      let dagitimci = sevkiyat['Dağıtımcı'];
+      if (!dagitimci || dagitimci.toString().trim() === '') {
+        dagitimci = 'Atanmamış';
+      } else {
+        dagitimci = dagitimci.toString().trim();
+      }
+      
+      if (!sevkiyatlarByDagitimci[dagitimci]) {
+        sevkiyatlarByDagitimci[dagitimci] = [];
+      }
+      sevkiyatlarByDagitimci[dagitimci].push(sevkiyat);
+    });
+    
+    Logger.log('Dağıtımcı key\'leri: ' + Object.keys(sevkiyatlarByDagitimci).join(', '));
+    
+    // Atanmamış sevkiyatları kontrol et
+    const atanmamisKey = Object.keys(sevkiyatlarByDagitimci).find(key => 
+      key === 'Atanmamış' || 
+      key.toString().trim() === '' || 
+      !key || 
+      key.toString().trim().toLowerCase() === 'atanmamış'
+    );
+    
+    if (atanmamisKey) {
+      Logger.log(`\n=== ATANMAMIŞ SEVKİYAT BULUNDU ===`);
+      Logger.log(`Atanmamış sevkiyat key: "${atanmamisKey}"`);
+      Logger.log(`Atanmamış sevkiyat sayısı: ${sevkiyatlarByDagitimci[atanmamisKey].length}`);
+      
+      const atanmamisSevkiyatlar = sevkiyatlarByDagitimci[atanmamisKey];
+      
+      Logger.log(`\nAtanmamış sevkiyatlar:`);
+      atanmamisSevkiyatlar.forEach((sevkiyat, index) => {
+        Logger.log(`${index + 1}. ${sevkiyat['Kaynak'] || ''} → ${sevkiyat['Hedef'] || ''} (${sevkiyat['Hedef Bölge'] || ''})`);
+        Logger.log(`   ID: ${sevkiyat['ID'] || 'YOK'}`);
+        Logger.log(`   Durum: ${sevkiyat['Durum'] || 'Bekliyor'}`);
+        Logger.log(`   Tarih: ${sevkiyat['Tarih'] || 'YOK'}`);
+      });
+      
+      Logger.log(`\nMail gönderilecek personel sayısı: ${personelList.filter(p => p['Mail']).length}`);
+      Logger.log(`Mail gönderilecek personeller:`);
+      personelList.filter(p => p['Mail']).forEach(personel => {
+        Logger.log(`  - ${personel['İsim']} (${personel['Mail']})`);
+      });
+      
+      Logger.log(`\n⚠️ TEST MODU: Mail gönderilmedi! Gerçek çalıştırmak için sendDailyReminders() fonksiyonunu kullanın.`);
+    } else {
+      Logger.log('\nAtanmamış sevkiyat bulunamadı.');
+    }
+    
+    Logger.log('\n=== TEST TAMAMLANDI ===');
+    
+  } catch (error) {
+    Logger.log('TEST HATASI: ' + error.toString());
+    Logger.log('Hata stack: ' + (error.stack || 'Yok'));
+  }
 }
